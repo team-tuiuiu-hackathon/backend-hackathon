@@ -26,6 +26,22 @@ build/
 .DS_Store
 Thumbs.db
 
+# Scripts temporários de execução
+executar_sem_mongodb.bat
+executar_sem_mongodb.js
+executar_sem_mongodb.ps1
+testar_rotas.bat
+executar_demo.bat
+preparar_commit.bat
+simular_commit.bat
+
+# Arquivos temporários de configuração
+src/config/mockDatabase.js
+
+# Documentação temporária
+DEMO_ROTAS.md
+INSTRUCOES_COMMIT.md
+
 # Arquivos de IDE
 .idea/
 .vscode/

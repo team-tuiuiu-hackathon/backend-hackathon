@@ -9,6 +9,10 @@ API RESTful desenvolvida em Node.js para gerenciamento de hackathons.
 - MongoDB com Mongoose
 - JWT para autenticação
 - bcryptjs para criptografia
+- express-rate-limit para rate limiting
+- express-validator para validação
+- helmet para segurança
+- uuid para identificadores únicos
 
 ## Estrutura do Projeto
 
@@ -47,6 +51,14 @@ API RESTful desenvolvida em Node.js para gerenciamento de hackathons.
 - Criação de equipes
 - Gerenciamento de projetos
 
+### Smart Contracts
+- Conexão e gerenciamento de carteiras Ethereum
+- Execução segura de transações
+- Validação de endereços de carteira
+- Rate limiting para operações críticas
+- Logging e monitoramento de atividades
+- Middleware de segurança avançado
+
 ## Como Executar
 
 1. Clone o repositório
@@ -66,7 +78,14 @@ API RESTful desenvolvida em Node.js para gerenciamento de hackathons.
    # Edite o arquivo .env com suas configurações
    ```
 
-4. Inicie o servidor
+4. Configure o MongoDB
+   - Instale o MongoDB localmente ou use um serviço como MongoDB Atlas
+   - Configure a string de conexão no arquivo .env:
+   ```
+   MONGODB_URI=sua_string_de_conexao_mongodb
+   ```
+
+5. Inicie o servidor
    ```bash
    # Modo de desenvolvimento
    npm run dev
