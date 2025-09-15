@@ -6,10 +6,19 @@ const connectDB = require('./config/database');
 dotenv.config();
 
 // Definição da porta
-const port = process.env.PORT || 3000;
+const port = process.env.PORT || 3001; // Alterado para porta 3001 para evitar conflitos
 
 // Conexão com o banco de dados
-connectDB();
+if (process.env.SKIP_DB === 'true') {
+  console.log('Modo de demonstração: Executando sem banco de dados...');
+} else {
+  try {
+    connectDB();
+  } catch (error) {
+    console.error('Erro ao conectar ao banco de dados:', error.message);
+    console.log('Continuando sem banco de dados para demonstração...');
+  }
+}
 
 // Inicialização do servidor
 const server = app.listen(port, () => {
