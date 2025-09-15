@@ -118,7 +118,7 @@ class SmartContractController {
 
       res.json({
         success: true,
-        message: 'Carteiras recuperadas com sucesso',
+        message: 'Wallets retrieved successfully',
         data: wallets.map(wallet => wallet.toJSON()),
         pagination: {
           page: parseInt(page),
