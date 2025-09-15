@@ -9,6 +9,10 @@ API RESTful desenvolvida em Node.js para gerenciamento de hackathons.
 - MongoDB com Mongoose
 - JWT para autenticação
 - bcryptjs para criptografia
+- express-rate-limit para rate limiting
+- express-validator para validação
+- helmet para segurança
+- uuid para identificadores únicos
 
 ## Estrutura do Projeto
 
@@ -46,6 +50,14 @@ API RESTful desenvolvida em Node.js para gerenciamento de hackathons.
 - Registro de participantes
 - Criação de equipes
 - Gerenciamento de projetos
+
+### Smart Contracts
+- Conexão e gerenciamento de carteiras Ethereum
+- Execução segura de transações
+- Validação de endereços de carteira
+- Rate limiting para operações críticas
+- Logging e monitoramento de atividades
+- Middleware de segurança avançado
 
 ## Como Executar
 
