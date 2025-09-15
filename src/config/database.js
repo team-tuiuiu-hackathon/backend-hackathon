@@ -14,9 +14,8 @@ const connectDB = async () => {
     return conn;
   } catch (error) {
     console.error(`Erro ao conectar ao MongoDB: ${error.message}`);
-    console.log('Continuando sem conexão com o banco de dados para fins de teste...');
-    // Não encerra o processo para permitir testes sem MongoDB
-    return null;
+    process.exit(1);
+  }
   }
 };
 

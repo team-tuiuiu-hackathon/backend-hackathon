@@ -66,7 +66,14 @@ API RESTful desenvolvida em Node.js para gerenciamento de hackathons.
    # Edite o arquivo .env com suas configurações
    ```
 
-4. Inicie o servidor
+4. Configure o MongoDB
+   - Instale o MongoDB localmente ou use um serviço como MongoDB Atlas
+   - Configure a string de conexão no arquivo .env:
+   ```
+   MONGODB_URI=sua_string_de_conexao_mongodb
+   ```
+
+5. Inicie o servidor
    ```bash
    # Modo de desenvolvimento
    npm run dev
