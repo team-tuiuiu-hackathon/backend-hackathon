@@ -1,11 +1,11 @@
 /**
- * Middleware para tratamento de erros
+ * Middleware for error handling
  */
 
-// Tratamento de erros em ambiente de desenvolvimento
+// Error handling in development environment
 const sendErrorDev = (err, res) => {
-  // Log detalhado para desenvolvimento
-  console.error('🚨 ERRO DETALHADO:', {
+  // Detailed log for development
+  console.error('🚨 DETAILED ERROR:', {
     message: err.message,
     stack: err.stack,
     statusCode: err.statusCode,
@@ -21,7 +21,7 @@ const sendErrorDev = (err, res) => {
   });
 };
 
-// Tratamento de erros em ambiente de produção
+// Error handling in production environment
 const sendErrorProd = (err, res) => {
   // Log seguro para produção (sem informações sensíveis)
   console.error('🔥 ERRO PRODUÇÃO:', {
@@ -98,13 +98,13 @@ class AppError extends Error {
   }
 }
 
-// Middleware principal de tratamento de erros
+// Main error handling middleware
 const errorHandler = (err, req, res, next) => {
   err.statusCode = err.statusCode || 500;
   err.status = err.status || 'error';
 
-  // Log da requisição que causou o erro
-  console.error('📍 CONTEXTO DO ERRO:', {
+  // Log of the request that caused the error
+  console.error('📍 ERROR CONTEXT:', {
     method: req.method,
     url: req.originalUrl,
     ip: req.ip,
@@ -118,7 +118,7 @@ const errorHandler = (err, req, res, next) => {
     let error = { ...err };
     error.message = err.message;
 
-    // Tratamento de erros específicos
+    // Specific error handling
     if (error.name === 'CastError') error = handleCastErrorDB(error);
     if (error.code === 11000) error = handleDuplicateFieldsDB(error);
     if (error.name === 'ValidationError') error = handleValidationErrorDB(error);
@@ -132,6 +132,6 @@ const errorHandler = (err, req, res, next) => {
   }
 };
 
-// Exportações
+// Exports
 module.exports = errorHandler;
 module.exports.AppError = AppError;

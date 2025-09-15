@@ -13,7 +13,7 @@ const filterObj = (obj, ...allowedFields) => {
 };
 
 /**
- * Obtém todos os usuários
+ * Get all users
  */
 exports.getAllUsers = async (req, res, next) => {
   try {
@@ -32,14 +32,14 @@ exports.getAllUsers = async (req, res, next) => {
 };
 
 /**
- * Obtém um usuário pelo ID
+ * Get a user by ID
  */
 exports.getUser = async (req, res, next) => {
   try {
     const user = await User.findById(req.params.id);
 
     if (!user) {
-      return next(new AppError('Nenhum usuário encontrado com esse ID', 404));
+      return next(new AppError('No user found with that ID', 404));
     }
 
     res.status(200).json({
@@ -54,24 +54,24 @@ exports.getUser = async (req, res, next) => {
 };
 
 /**
- * Atualiza o usuário atual
+ * Update current user
  */
 exports.updateMe = async (req, res, next) => {
   try {
-    // 1) Criar erro se o usuário tentar atualizar a senha
+    // 1) Create error if user tries to update password
     if (req.body.password || req.body.passwordConfirm) {
       return next(
         new AppError(
-          'Esta rota não é para atualizações de senha. Por favor, use /updateMyPassword.',
+          'This route is not for password updates. Please use /updateMyPassword.',
           400
         )
       );
     }
 
-    // 2) Filtrar campos que não são permitidos
+    // 2) Filter fields that are not allowed
     const filteredBody = filterObj(req.body, 'name', 'email', 'photo');
 
-    // 3) Atualizar documento do usuário
+    // 3) Update user document
     const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
       new: true,
       runValidators: true,

@@ -311,8 +311,8 @@ class SmartContractMiddleware {
   }
 
   /**
-   * Middleware para tratamento de erros específicos de smart contract
-   * @param {Error} error - Erro capturado
+   * Middleware for smart contract specific error handling
+   * @param {Error} error - Captured error
    * @param {Object} req - Request object
    * @param {Object} res - Response object
    * @param {Function} next - Next middleware function
@@ -320,11 +320,11 @@ class SmartContractMiddleware {
   static handleSmartContractErrors(error, req, res, next) {
     console.error('Smart Contract Error:', error);
 
-    // Erros específicos de smart contract
+    // Smart contract specific errors
     if (error.message.includes('insufficient funds')) {
       return res.status(400).json({
         success: false,
-        message: 'Fundos insuficientes na carteira',
+        message: 'Insufficient funds in wallet',
         code: 'INSUFFICIENT_FUNDS'
       });
     }
@@ -332,7 +332,7 @@ class SmartContractMiddleware {
     if (error.message.includes('gas limit')) {
       return res.status(400).json({
         success: false,
-        message: 'Limite de gas excedido',
+        message: 'Gas limit exceeded',
         code: 'GAS_LIMIT_EXCEEDED'
       });
     }
@@ -340,7 +340,7 @@ class SmartContractMiddleware {
     if (error.message.includes('nonce')) {
       return res.status(400).json({
         success: false,
-        message: 'Erro de sequência de transação (nonce)',
+        message: 'Transaction sequence error (nonce)',
         code: 'INVALID_NONCE'
       });
     }
@@ -348,12 +348,12 @@ class SmartContractMiddleware {
     if (error.message.includes('revert')) {
       return res.status(400).json({
         success: false,
-        message: 'Transação revertida pelo smart contract',
+        message: 'Transaction reverted by smart contract',
         code: 'TRANSACTION_REVERTED'
       });
     }
 
-    // Erro de validação de carteira
+    // Wallet validation error
     if (error.message.includes('carteira')) {
       return res.status(400).json({
         success: false,
@@ -362,10 +362,10 @@ class SmartContractMiddleware {
       });
     }
 
-    // Erro genérico
+    // Generic error
     res.status(500).json({
       success: false,
-      message: 'Erro interno do servidor de smart contract',
+      message: 'Internal smart contract server error',
       code: 'INTERNAL_ERROR',
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });

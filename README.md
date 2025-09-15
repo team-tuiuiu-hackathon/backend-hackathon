@@ -1,117 +1,117 @@
 # Backend Hackathon
 
-API RESTful desenvolvida em Node.js para gerenciamento de hackathons.
+RESTful API developed in Node.js for hackathon management.
 
-## Tecnologias Utilizadas
+## Technologies Used
 
 - Node.js
 - Express
 - MongoDB com Mongoose
-- JWT para autenticação
-- bcryptjs para criptografia
-- express-rate-limit para rate limiting
-- express-validator para validação
-- helmet para segurança
-- uuid para identificadores únicos
+- JWT for authentication
+- bcryptjs for encryption
+- express-rate-limit for rate limiting
+- express-validator for validation
+- helmet for security
+- uuid for unique identifiers
 
-## Estrutura do Projeto
+## Project Structure
 
 ```
 ├── src/
-│   ├── config/         # Configurações do projeto
-│   ├── controllers/    # Controladores da aplicação
-│   ├── middleware/     # Middlewares personalizados
-│   ├── models/         # Modelos do banco de dados
-│   ├── routes/         # Rotas da API
-│   ├── app.js          # Configuração do Express
-│   └── server.js       # Ponto de entrada da aplicação
-├── .env                # Variáveis de ambiente
-├── .env.example        # Exemplo de variáveis de ambiente
-├── .gitignore          # Arquivos ignorados pelo Git
-├── package.json        # Dependências e scripts
-└── README.md           # Documentação do projeto
+│   ├── config/         # Project configurations
+│   ├── controllers/    # Application controllers
+│   ├── middleware/     # Custom middlewares
+│   ├── models/         # Database models
+│   ├── routes/         # API routes
+│   ├── app.js          # Express configuration
+│   └── server.js       # Application entry point
+├── .env                # Environment variables
+├── .env.example        # Environment variables example
+├── .gitignore          # Files ignored by Git
+├── package.json        # Dependencies and scripts
+└── README.md           # Project documentation
 ```
 
-## Funcionalidades
+## Features
 
-### Autenticação
-- Registro de usuários
-- Login com JWT
-- Proteção de rotas
-- Controle de acesso baseado em funções
+### Authentication
+- User registration
+- JWT login
+- Route protection
+- Role-based access control
 
-### Usuários
-- CRUD completo de usuários
-- Atualização de perfil
-- Alteração de senha
+### Users
+- Complete user CRUD
+- Profile updates
+- Password changes
 
 ### Hackathons
-- CRUD completo de hackathons
-- Registro de participantes
-- Criação de equipes
-- Gerenciamento de projetos
+- Complete hackathon CRUD
+- Participant registration
+- Team creation
+- Project management
 
 ### Smart Contracts
-- Conexão e gerenciamento de carteiras Ethereum
-- Execução segura de transações
-- Validação de endereços de carteira
-- Rate limiting para operações críticas
-- Logging e monitoramento de atividades
-- Middleware de segurança avançado
+- Ethereum wallet connection and management
+- Secure transaction execution
+- Wallet address validation
+- Rate limiting for critical operations
+- Activity logging and monitoring
+- Advanced security middleware
 
-## Como Executar
+## How to Run
 
-1. Clone o repositório
+1. Clone the repository
    ```bash
-   git clone https://github.com/seu-usuario/backend-hackathon.git
+   git clone https://github.com/your-username/backend-hackathon.git
    cd backend-hackathon
    ```
 
-2. Instale as dependências
+2. Install dependencies
    ```bash
    npm install
    ```
 
-3. Configure as variáveis de ambiente
+3. Configure environment variables
    ```bash
    cp .env.example .env
-   # Edite o arquivo .env com suas configurações
+   # Edit the .env file with your configurations
    ```
 
-4. Configure o MongoDB
-   - Instale o MongoDB localmente ou use um serviço como MongoDB Atlas
-   - Configure a string de conexão no arquivo .env:
+4. Configure MongoDB
+   - Install MongoDB locally or use a service like MongoDB Atlas
+   - Configure the connection string in the .env file:
    ```
-   MONGODB_URI=sua_string_de_conexao_mongodb
+   MONGODB_URI=your_mongodb_connection_string
    ```
 
-5. Inicie o servidor
+5. Start the server
    ```bash
-   # Modo de desenvolvimento
+   # Development mode
    npm run dev
    
-   # Modo de produção
+   # Production mode
    npm start
    ```
 
 ## API Endpoints
 
-### Autenticação
-- `POST /api/v1/auth/signup` - Registrar um novo usuário
-- `POST /api/v1/auth/login` - Fazer login
-- `PATCH /api/v1/auth/updateMyPassword` - Atualizar senha
+### Authentication
+- `POST /api/v1/auth/signup` - Register a new user
+- `POST /api/v1/auth/login` - Login
+- `PATCH /api/v1/auth/updateMyPassword` - Update password
 
-### Usuários
-- `GET /api/v1/users` - Listar todos os usuários (admin)
-- `GET /api/v1/users/:id` - Obter um usuário específico (admin)
-- `PATCH /api/v1/users/updateMe` - Atualizar perfil do usuário atual
-- `DELETE /api/v1/users/deleteMe` - Desativar conta do usuário atual
+### Users
+- `GET /api/v1/users` - List all users (admin)
+- `GET /api/v1/users/:id` - Get a specific user (admin)
+- `PATCH /api/v1/users/updateMe` - Update current user profile
+- `DELETE /api/v1/users/deleteMe` - Deactivate current user account
 
 ### Hackathons
-- `GET /api/v1/hackathons` - Listar todos os hackathons
-- `GET /api/v1/hackathons/:id` - Obter um hackathon específico
-- `POST /api/v1/hackathons` - Criar um novo hackathon
-- `PATCH /api/v1/hackathons/:id` - Atualizar um hackathon
-- `DELETE /api/v1/hackathons/:id` - Excluir um hackathon
-- `POST /api/v1/hackathons/:id/register` - Registrar-se em um hackathon
-- `POST /api/v1/hackathons/:id/teams` - Criar uma equipe em um hackathon
+- `GET /api/v1/hackathons` - List all hackathons
+- `GET /api/v1/hackathons/:id` - Get a specific hackathon
+- `POST /api/v1/hackathons` - Create a new hackathon
+- `PATCH /api/v1/hackathons/:id` - Update a hackathon
+- `DELETE /api/v1/hackathons/:id` - Delete a hackathon
+- `POST /api/v1/hackathons/:id/register` - Register for a hackathon
+- `POST /api/v1/hackathons/:id/teams` - Create a team in a hackathon

@@ -1,7 +1,7 @@
-# Dependências
+# Dependencies
 node_modules/
 
-# Arquivos de ambiente
+# Environment files
 .env
 .env.local
 .env.development.local
@@ -15,18 +15,18 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# Diretório de cobertura de testes
+# Test coverage directory
 coverage/
 
-# Arquivos de build
+# Build files
 dist/
 build/
 
-# Arquivos temporários
+# Temporary files
 .DS_Store
 Thumbs.db
 
-# Scripts temporários de execução
+# Temporary execution scripts
 executar_sem_mongodb.bat
 executar_sem_mongodb.js
 executar_sem_mongodb.ps1
@@ -35,14 +35,14 @@ executar_demo.bat
 preparar_commit.bat
 simular_commit.bat
 
-# Arquivos temporários de configuração
+# Temporary configuration files
 src/config/mockDatabase.js
 
-# Documentação temporária
+# Temporary documentation
 DEMO_ROTAS.md
 INSTRUCOES_COMMIT.md
 
-# Arquivos de IDE
+# IDE files
 .idea/
 .vscode/
 *.sublime-project
