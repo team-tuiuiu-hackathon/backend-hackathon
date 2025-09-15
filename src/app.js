@@ -10,6 +10,11 @@ const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
 const hackathonRoutes = require('./routes/hackathonRoutes');
 const smartContractRoutes = require('./routes/smartContractRoutes');
+const multisigWalletRoutes = require('./routes/multisigWalletRoutes');
+const transactionRoutes = require('./routes/transactionRoutes');
+const depositRoutes = require('./routes/depositRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const fundSplitRoutes = require('./routes/fundSplitRoutes');
 
 // Importação de middleware de erro
 const errorHandler = require('./middleware/errorHandler');
@@ -80,6 +85,11 @@ const API_PREFIX = process.env.API_PREFIX || '/api/v1';
 app.use(`${API_PREFIX}/users`, userRoutes);
 app.use(`${API_PREFIX}/auth`, authRoutes);
 app.use(`${API_PREFIX}/hackathons`, hackathonRoutes);
+app.use(`${API_PREFIX}/wallets`, multisigWalletRoutes);
+app.use(`${API_PREFIX}`, transactionRoutes);
+app.use(`${API_PREFIX}`, depositRoutes);
+app.use(`${API_PREFIX}`, paymentRoutes);
+app.use(`${API_PREFIX}`, fundSplitRoutes);
 app.use(`${API_PREFIX}/smart-contract`, 
   SmartContractMiddleware.sanitizeInput,
   SmartContractMiddleware.logActivity,

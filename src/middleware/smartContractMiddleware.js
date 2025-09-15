@@ -62,40 +62,155 @@ class SmartContractMiddleware {
   }
 
   /**
-   * Middleware para validação de endereços de carteira
+   * Middleware para validação de endereços de carteira Stellar
    * @param {Object} req - Request object
    * @param {Object} res - Response object
    * @param {Function} next - Next middleware function
    */
   static validateWalletAddress(req, res, next) {
-    const { address } = req.body;
+    const { walletAddress, address } = req.body;
+    const addressToValidate = walletAddress || address;
     
-    if (!address) {
+    if (!addressToValidate) {
       return res.status(400).json({
         success: false,
-        message: 'Endereço da carteira é obrigatório'
+        message: 'Endereço da carteira é obrigatório',
+        code: 'MISSING_WALLET_ADDRESS'
       });
     }
 
-    // Validação de formato Ethereum
-    const ethereumAddressRegex = /^0x[a-fA-F0-9]{40}$/;
-    if (!ethereumAddressRegex.test(address)) {
+    // Validar formato do endereço Stellar
+    const stellarAddressRegex = /^G[A-Z2-7]{55}$/;
+    if (!stellarAddressRegex.test(addressToValidate)) {
       return res.status(400).json({
         success: false,
-        message: 'Formato de endereço Ethereum inválido'
+        message: 'Formato de endereço Stellar inválido',
+        code: 'INVALID_STELLAR_ADDRESS_FORMAT'
       });
     }
 
-    // Verificar se não é um endereço conhecido como malicioso (lista básica)
+    // Verificar se não é um endereço conhecido como malicioso
     const blacklistedAddresses = [
-      '0x0000000000000000000000000000000000000000', // Endereço zero
-      '0x000000000000000000000000000000000000dead', // Endereço burn comum
+      'GAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWHF', // Endereço nulo
+      'GBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB' // Endereço de teste
     ];
 
-    if (blacklistedAddresses.includes(address.toLowerCase())) {
-      return res.status(403).json({
+    if (blacklistedAddresses.includes(addressToValidate)) {
+      return res.status(400).json({
         success: false,
-        message: 'Endereço não permitido'
+        message: 'Endereço de carteira não permitido',
+        code: 'BLACKLISTED_WALLET_ADDRESS'
+      });
+    }
+
+    next();
+  }
+
+  /**
+   * Middleware para validação de chaves privadas Stellar
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   * @param {Function} next - Next middleware function
+   */
+  static validateStellarPrivateKey(req, res, next) {
+    const { privateKey } = req.body;
+    
+    if (!privateKey) {
+      return res.status(400).json({
+        success: false,
+        message: 'Chave privada é obrigatória',
+        code: 'MISSING_PRIVATE_KEY'
+      });
+    }
+
+    // Validar formato da chave privada Stellar
+    const stellarPrivateKeyRegex = /^S[A-Z2-7]{55}$/;
+    if (!stellarPrivateKeyRegex.test(privateKey)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Formato de chave privada Stellar inválido',
+        code: 'INVALID_STELLAR_PRIVATE_KEY_FORMAT'
+      });
+    }
+
+    next();
+  }
+
+  /**
+   * Middleware para validação de valores monetários USDC
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   * @param {Function} next - Next middleware function
+   */
+  static validateAmount(req, res, next) {
+    const { amount } = req.body;
+    
+    if (amount === undefined || amount === null) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valor é obrigatório',
+        code: 'MISSING_AMOUNT'
+      });
+    }
+
+    const numAmount = parseFloat(amount);
+    
+    if (isNaN(numAmount) || numAmount <= 0) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valor deve ser um número positivo',
+        code: 'INVALID_AMOUNT'
+      });
+    }
+
+    // Valor mínimo para USDC (0.000001)
+    if (numAmount < 0.000001) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valor mínimo é 0.000001 USDC',
+        code: 'AMOUNT_TOO_SMALL'
+      });
+    }
+
+    // Valor máximo para segurança (1 milhão USDC)
+    if (numAmount > 1000000) {
+      return res.status(400).json({
+        success: false,
+        message: 'Valor máximo é 1.000.000 USDC',
+        code: 'AMOUNT_TOO_LARGE'
+      });
+    }
+
+    // Normalizar para 6 casas decimais (padrão USDC)
+    req.body.amount = Math.round(numAmount * 1000000) / 1000000;
+
+    next();
+  }
+
+  /**
+   * Middleware para validação de hash de transação Stellar
+   * @param {Object} req - Request object
+   * @param {Object} res - Response object
+   * @param {Function} next - Next middleware function
+   */
+  static validateTransactionHash(req, res, next) {
+    const { txHash } = req.params;
+    
+    if (!txHash) {
+      return res.status(400).json({
+        success: false,
+        message: 'Hash da transação é obrigatório',
+        code: 'MISSING_TRANSACTION_HASH'
+      });
+    }
+
+    // Hash de transação Stellar deve ter 64 caracteres hexadecimais
+    const hashRegex = /^[a-fA-F0-9]{64}$/;
+    if (!hashRegex.test(txHash)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Hash de transação inválido',
+        code: 'INVALID_TRANSACTION_HASH'
       });
     }
 
