@@ -20,6 +20,9 @@ const fundSplitRoutes = require('./routes/fundSplitRoutes');
 const errorHandler = require('./middleware/errorHandler');
 const SmartContractMiddleware = require('./middleware/smartContractMiddleware');
 
+// Importação do Swagger
+const { specs, swaggerUi } = require('./config/swagger');
+
 // Configuração das variáveis de ambiente
 dotenv.config();
 
@@ -31,11 +34,14 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'"],
-      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
+      scriptSrc: ["'self'", "'unsafe-inline'"],
       imgSrc: ["'self'", "data:", "https:"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com"],
+      connectSrc: ["'self'"],
     },
   },
+  crossOriginEmbedderPolicy: false
 }));
 
 // Rate limiting global
@@ -51,37 +57,45 @@ const globalLimiter = rateLimit({
 });
 app.use(globalLimiter);
 
-// Middleware para parsing do corpo da requisição
+// Middleware for request body parsing
 app.use(express.json({ 
   limit: '10kb',
   verify: (req, res, buf) => {
     try {
       JSON.parse(buf);
     } catch (e) {
-      res.status(400).json({ status: 'error', message: 'JSON inválido' });
+      res.status(400).json({ status: 'error', message: 'Invalid JSON' });
       return;
     }
   }
 }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
-// Middleware para CORS com configurações mais seguras
+// Middleware for CORS with more secure configurations
 app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:3000', 'http://127.0.0.1:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
+  credentials: true,
+  optionsSuccessStatus: 200
 }));
 
-// Middleware para logging em desenvolvimento
+// Middleware for logging in development
 if (process.env.NODE_ENV === 'development') {
   app.use(morgan('dev'));
 }
 
-// Prefixo da API
+// API prefix
 const API_PREFIX = process.env.API_PREFIX || '/api/v1';
 
-// Rotas
+// Swagger UI
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
+  explorer: true,
+  customCss: '.swagger-ui .topbar { display: none }',
+  customSiteTitle: 'Backend Hackathon API Documentation'
+}));
+
+// Routes
 app.use(`${API_PREFIX}/users`, userRoutes);
 app.use(`${API_PREFIX}/auth`, authRoutes);
 app.use(`${API_PREFIX}/hackathons`, hackathonRoutes);
@@ -96,28 +110,28 @@ app.use(`${API_PREFIX}/smart-contract`,
   smartContractRoutes
 );
 
-// Rota para verificar se a API está funcionando
+// Route to check if the API is working
 app.get('/', (req, res) => {
   res.status(200).json({
     status: 'success',
-    message: 'API Backend Hackathon funcionando!',
+    message: 'Backend Hackathon API is working!',
   });
 });
 
 
 
-// Middleware para rotas não encontradas
+// Middleware for routes not found
 app.all('*', (req, res, next) => {
   res.status(404).json({
     status: 'error',
-    message: `Não foi possível encontrar ${req.originalUrl} neste servidor!`,
+    message: `Could not find ${req.originalUrl} on this server!`,
   });
 });
 
-// Middleware de tratamento de erros específicos de smart contract
+// Middleware for smart contract specific error handling
 app.use('/api/*/smart-contract', SmartContractMiddleware.handleSmartContractErrors);
 
-// Middleware para tratamento de erros
+// Middleware for error handling
 app.use(errorHandler);
 
 module.exports = app;

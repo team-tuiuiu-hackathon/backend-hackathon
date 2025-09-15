@@ -264,7 +264,7 @@ describe('Smart Contract API', () => {
         .expect(404);
 
       expect(response.body.success).toBe(false);
-      expect(response.body.message).toContain('não encontrada');
+      expect(response.body.message).toContain('not found');
     });
   });
 

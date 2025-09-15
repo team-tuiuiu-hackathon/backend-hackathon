@@ -1,7 +1,7 @@
-// Teste de sintaxe para verificar se há erros nos arquivos criados
+// Syntax test to check for errors in created files
 
 try {
-  console.log('🔍 Testando sintaxe dos arquivos...');
+  console.log('🔍 Testing file syntax...');
   
   // Testar modelo Wallet
   const Wallet = require('./src/models/walletModel');
@@ -31,16 +31,16 @@ try {
   const app = require('./src/app');
   console.log('✅ app.js - Sintaxe OK');
   
-  console.log('\n🎉 Todos os arquivos passaram no teste de sintaxe!');
-  console.log('\n📋 Resumo das correções realizadas:');
-  console.log('   • Corrigido import do authMiddleware em smartContractRoutes.js');
-  console.log('   • Corrigido erro de sintaxe (chave extra) em database.js');
-  console.log('   • Ajustado sistema de exportação em errorHandler.js');
+  console.log('\n🎉 All files passed the syntax test!');
+  console.log('\n📋 Summary of fixes applied:');
+  console.log('   • Fixed authMiddleware import in smartContractRoutes.js');
+  console.log('   • Fixed syntax error (extra brace) in database.js');
+  console.log('   • Adjusted export system in errorHandler.js');
   
-  console.log('\n✨ O sistema está pronto para execução!');
+  console.log('\n✨ The system is ready for execution!');
   
 } catch (error) {
-  console.error('❌ Erro encontrado:', error.message);
+  console.error('❌ Error found:', error.message);
   console.error('📍 Stack:', error.stack);
   process.exit(1);
 }
