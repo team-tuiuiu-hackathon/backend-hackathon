@@ -8,6 +8,7 @@ const dotenv = require('dotenv');
 // Importação de rotas
 const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
+const stellarAuthRoutes = require('./routes/stellarAuthRoutes');
 const hackathonRoutes = require('./routes/hackathonRoutes');
 const smartContractRoutes = require('./routes/smartContractRoutes');
 const multisigWalletRoutes = require('./routes/multisigWalletRoutes');
@@ -96,8 +97,10 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
 }));
 
 // Routes
+// Rotas da API
 app.use(`${API_PREFIX}/users`, userRoutes);
 app.use(`${API_PREFIX}/auth`, authRoutes);
+app.use(`${API_PREFIX}/stellar`, stellarAuthRoutes);
 app.use(`${API_PREFIX}/hackathons`, hackathonRoutes);
 app.use(`${API_PREFIX}/wallets`, multisigWalletRoutes);
 app.use(`${API_PREFIX}`, transactionRoutes);
