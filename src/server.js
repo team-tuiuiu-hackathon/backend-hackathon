@@ -1,6 +1,6 @@
 const app = require('./app');
 const dotenv = require('dotenv');
-const connectDB = require('./config/database');
+const { connectDB } = require('./config/database');
 
 // Configuração das variáveis de ambiente
 dotenv.config();

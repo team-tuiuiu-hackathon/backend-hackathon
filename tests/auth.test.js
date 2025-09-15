@@ -1,33 +1,34 @@
 const request = require('supertest');
-const mongoose = require('mongoose');
+const { testSequelize } = require('../src/config/testDatabase');
 const app = require('../src/app');
 const User = require('../src/models/userModel');
 
-// Configuração para testes
+// Conectar ao banco de dados de teste antes de todos os testes
 beforeAll(async () => {
-  // Conectar ao banco de dados de teste
-  const testDbUri = process.env.MONGODB_URI_TEST || 'mongodb://localhost:27017/hackathon_test';
-  await mongoose.connect(testDbUri, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  });
+  await testSequelize.authenticate();
+  await testSequelize.sync({ force: true }); // Recria as tabelas para testes
 });
 
 // Limpar o banco de dados após cada teste
 afterEach(async () => {
-  await User.deleteMany({});
+  try {
+    await User.destroy({ where: {}, force: true });
+  } catch (error) {
+    // Ignorar erros de limpeza nos testes
+    console.log('Erro na limpeza dos testes:', error.message);
+  }
 });
 
 // Desconectar do banco de dados após todos os testes
 afterAll(async () => {
-  await mongoose.connection.close();
+  await testSequelize.close();
 });
 
 describe('Testes de autenticação', () => {
   // Teste de registro de usuário
   test('POST /api/v1/auth/signup - deve registrar um novo usuário', async () => {
     const userData = {
-      name: 'Usuário Teste',
+      fullName: 'Usuário Teste',
       email: 'teste@example.com',
       password: 'senha123456',
       passwordConfirm: 'senha123456',
@@ -41,7 +42,7 @@ describe('Testes de autenticação', () => {
     expect(response.body.status).toBe('success');
     expect(response.body.token).toBeDefined();
     expect(response.body.data.user).toBeDefined();
-    expect(response.body.data.user.name).toBe(userData.name);
+    expect(response.body.data.user.fullName).toBe(userData.fullName);
     expect(response.body.data.user.email).toBe(userData.email);
     expect(response.body.data.user.password).toBeUndefined(); // Senha não deve ser retornada
   });
@@ -50,7 +51,7 @@ describe('Testes de autenticação', () => {
   test('POST /api/v1/auth/login - deve fazer login com credenciais válidas', async () => {
     // Primeiro, criar um usuário
     const userData = {
-      name: 'Usuário Login',
+      fullName: 'Usuário Login',
       email: 'login@example.com',
       password: 'senha123456',
       passwordConfirm: 'senha123456',

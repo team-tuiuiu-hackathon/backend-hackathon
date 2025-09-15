@@ -2,6 +2,7 @@ const MultisigWallet = require('../models/multisigWalletModel');
 const User = require('../models/userModel');
 const { validationResult } = require('express-validator');
 const { v4: uuidv4 } = require('uuid');
+const { Op } = require('sequelize');
 
 class MultisigWalletController {
   
@@ -40,7 +41,11 @@ class MultisigWalletController {
 
       // Verificar se todos os participantes existem
       const userIds = participants.map(p => p.userId);
-      const existingUsers = await User.find({ _id: { $in: userIds } });
+      const existingUsers = await User.findAll({ 
+        where: { 
+          id: { [Op.in]: userIds } 
+        } 
+      });
       
       if (existingUsers.length !== userIds.length) {
         return res.status(400).json({
@@ -50,7 +55,9 @@ class MultisigWalletController {
       }
 
       // Verificar se o contrato já existe
-      const existingWallet = await MultisigWallet.findOne({ contractAddress });
+      const existingWallet = await MultisigWallet.findOne({ 
+        where: { contractAddress } 
+      });
       if (existingWallet) {
         return res.status(409).json({
           status: 'error',
@@ -71,26 +78,23 @@ class MultisigWalletController {
           addedAt: new Date()
         })),
         createdBy,
-        blockchainData: {
-          lastSyncAt: new Date()
-        }
+        balance: '0.00'
       };
 
-      const wallet = new MultisigWallet(walletData);
-      await wallet.save();
+      const wallet = await MultisigWallet.create(walletData);
 
       res.status(201).json({
         status: 'success',
         message: 'Carteira multisig criada com sucesso',
         data: {
           wallet: {
-            id: wallet._id,
+            id: wallet.id,
             walletId: wallet.walletId,
             name: wallet.name,
             description: wallet.description,
             contractAddress: wallet.contractAddress,
             threshold: wallet.threshold,
-            participantCount: wallet.participantCount,
+            participantCount: wallet.participants ? wallet.participants.length : 0,
             status: wallet.status,
             createdAt: wallet.createdAt
           }
@@ -118,7 +122,7 @@ class MultisigWalletController {
       const { threshold } = req.body;
       const userId = req.user.id;
 
-      const wallet = await MultisigWallet.findById(walletId);
+      const wallet = await MultisigWallet.findByPk(walletId);
       if (!wallet) {
         return res.status(404).json({
           status: 'error',
@@ -127,7 +131,9 @@ class MultisigWalletController {
       }
 
       // Verificar se o usuário é admin da carteira
-      if (!wallet.isAdmin(userId)) {
+      const participants = wallet.participants || [];
+      const userParticipant = participants.find(p => p.userId === userId);
+      if (!userParticipant || userParticipant.role !== 'admin') {
         return res.status(403).json({
           status: 'error',
           message: 'Apenas administradores podem alterar o threshold'
@@ -135,7 +141,7 @@ class MultisigWalletController {
       }
 
       // Validar novo threshold
-      if (threshold > wallet.participants.length || threshold < 1) {
+      if (threshold > participants.length || threshold < 1) {
         return res.status(400).json({
           status: 'error',
           message: 'Threshold deve estar entre 1 e o número de participantes'
@@ -143,8 +149,7 @@ class MultisigWalletController {
       }
 
       const oldThreshold = wallet.threshold;
-      wallet.threshold = threshold;
-      await wallet.save();
+      await wallet.update({ threshold });
 
       res.json({
         status: 'success',
@@ -178,7 +183,7 @@ class MultisigWalletController {
       const { userId: newUserId, publicKey, role = 'participant' } = req.body;
       const adminUserId = req.user.id;
 
-      const wallet = await MultisigWallet.findById(walletId);
+      const wallet = await MultisigWallet.findByPk(walletId);
       if (!wallet) {
         return res.status(404).json({
           status: 'error',
@@ -187,7 +192,9 @@ class MultisigWalletController {
       }
 
       // Verificar se o usuário é admin da carteira
-      if (!wallet.isAdmin(adminUserId)) {
+      const participants = wallet.participants || [];
+      const adminParticipant = participants.find(p => p.userId === adminUserId);
+      if (!adminParticipant || adminParticipant.role !== 'admin') {
         return res.status(403).json({
           status: 'error',
           message: 'Apenas administradores podem adicionar participantes'

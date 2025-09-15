@@ -17,7 +17,7 @@ const filterObj = (obj, ...allowedFields) => {
  */
 exports.getAllUsers = async (req, res, next) => {
   try {
-    const users = await User.find();
+    const users = await User.findAll();
 
     res.status(200).json({
       status: 'success',
@@ -32,14 +32,14 @@ exports.getAllUsers = async (req, res, next) => {
 };
 
 /**
- * Get a user by ID
+ * Get user by ID
  */
 exports.getUser = async (req, res, next) => {
   try {
-    const user = await User.findById(req.params.id);
+    const user = await User.findByPk(req.params.id);
 
     if (!user) {
-      return next(new AppError('No user found with that ID', 404));
+      return next(new AppError('Usuário não encontrado com esse ID', 404));
     }
 
     res.status(200).json({
@@ -54,7 +54,7 @@ exports.getUser = async (req, res, next) => {
 };
 
 /**
- * Update current user
+ * Atualiza os dados do usuário atual
  */
 exports.updateMe = async (req, res, next) => {
   try {
@@ -62,28 +62,41 @@ exports.updateMe = async (req, res, next) => {
     if (req.body.password || req.body.passwordConfirm) {
       return next(
         new AppError(
-          'This route is not for password updates. Please use /updateMyPassword.',
+          'Esta rota não é para atualização de senha. Use /updateMyPassword.',
           400
         )
       );
     }
 
-    // 2) Filter fields that are not allowed
-    const filteredBody = filterObj(req.body, 'name', 'email', 'photo');
+    // 2) Filter fields that are allowed for update
+    const filteredBody = filterObj(req.body, 'fullName', 'email');
 
     // 3) Update user document
-    const updatedUser = await User.findByIdAndUpdate(req.user.id, filteredBody, {
-      new: true,
-      runValidators: true,
-    });
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return next(new AppError('Usuário não encontrado', 404));
+    }
+
+    await user.update(filteredBody);
 
     res.status(200).json({
       status: 'success',
       data: {
-        user: updatedUser,
+        user,
       },
     });
   } catch (error) {
+    // Tratamento específico para erros de validação do Sequelize
+    if (error.name === 'SequelizeValidationError') {
+      const messages = error.errors.map(err => err.message);
+      return next(new AppError(messages.join('. '), 400));
+    }
+    
+    // Tratamento para erro de email duplicado
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return next(new AppError('Este email já está cadastrado', 400));
+    }
+
     next(error);
   }
 };
@@ -93,8 +106,13 @@ exports.updateMe = async (req, res, next) => {
  */
 exports.deleteMe = async (req, res, next) => {
   try {
-    await User.findByIdAndUpdate(req.user.id, { active: false });
+    const user = await User.findByPk(req.user.id);
+    if (!user) {
+      return next(new AppError('Usuário não encontrado', 404));
+    }
 
+    // Como removemos o campo accountStatus, vamos apenas retornar sucesso
+    // Em uma implementação futura, poderia ser adicionado um campo 'active'
     res.status(204).json({
       status: 'success',
       data: null,
@@ -122,14 +140,13 @@ exports.createUser = async (req, res, next) => {
  */
 exports.updateUser = async (req, res, next) => {
   try {
-    const user = await User.findByIdAndUpdate(req.params.id, req.body, {
-      new: true,
-      runValidators: true,
-    });
+    const user = await User.findByPk(req.params.id);
 
     if (!user) {
       return next(new AppError('Nenhum usuário encontrado com esse ID', 404));
     }
+
+    await user.update(req.body);
 
     res.status(200).json({
       status: 'success',
@@ -138,6 +155,17 @@ exports.updateUser = async (req, res, next) => {
       },
     });
   } catch (error) {
+    // Tratamento específico para erros de validação do Sequelize
+    if (error.name === 'SequelizeValidationError') {
+      const messages = error.errors.map(err => err.message);
+      return next(new AppError(messages.join('. '), 400));
+    }
+    
+    // Tratamento para erro de email duplicado
+    if (error.name === 'SequelizeUniqueConstraintError') {
+      return next(new AppError('Este email já está cadastrado', 400));
+    }
+
     next(error);
   }
 };
@@ -147,11 +175,13 @@ exports.updateUser = async (req, res, next) => {
  */
 exports.deleteUser = async (req, res, next) => {
   try {
-    const user = await User.findByIdAndDelete(req.params.id);
+    const user = await User.findByPk(req.params.id);
 
     if (!user) {
       return next(new AppError('Nenhum usuário encontrado com esse ID', 404));
     }
+
+    await user.destroy();
 
     res.status(204).json({
       status: 'success',

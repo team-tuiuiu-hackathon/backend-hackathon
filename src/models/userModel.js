@@ -1,107 +1,144 @@
-const mongoose = require('mongoose');
-const validator = require('validator');
+const { DataTypes } = require('sequelize');
 const bcrypt = require('bcryptjs');
 
-const userSchema = new mongoose.Schema(
-  {
-    name: {
-      type: String,
-      required: [true, 'Por favor, informe seu nome'],
-      trim: true,
-    },
-    email: {
-      type: String,
-      required: [true, 'Por favor, informe seu email'],
-      unique: true,
-      lowercase: true,
-      validate: [validator.isEmail, 'Por favor, forneça um email válido'],
-    },
-    photo: {
-      type: String,
-      default: 'default.jpg',
-    },
-    role: {
-      type: String,
-      enum: ['user', 'admin'],
-      default: 'user',
-    },
-    password: {
-      type: String,
-      required: [true, 'Por favor, forneça uma senha'],
-      minlength: 8,
-      select: false,
-    },
-    passwordConfirm: {
-      type: String,
-      required: [true, 'Por favor, confirme sua senha'],
-      validate: {
-        // Este validador só funciona em CREATE e SAVE!!!
-        validator: function (el) {
-          return el === this.password;
-        },
-        message: 'As senhas não são iguais!',
-      },
-    },
-    passwordChangedAt: Date,
-    passwordResetToken: String,
-    passwordResetExpires: Date,
-    active: {
-      type: Boolean,
-      default: true,
-      select: false,
-    },
-  },
-  {
-    timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
+// Função para obter a instância do Sequelize correta
+const getSequelize = () => {
+  // Se estivermos em ambiente de teste, usar o banco de teste
+  if (process.env.NODE_ENV === 'test') {
+    const { testSequelize } = require('../config/testDatabase');
+    return testSequelize;
   }
-);
-
-// Middleware para criptografar a senha antes de salvar
-userSchema.pre('save', async function (next) {
-  // Só executa se a senha foi modificada
-  if (!this.isModified('password')) return next();
-
-  // Hash a senha com custo 12
-  this.password = await bcrypt.hash(this.password, 12);
-
-  // Não persiste o campo passwordConfirm
-  this.passwordConfirm = undefined;
-  next();
-});
-
-// Middleware para atualizar o campo passwordChangedAt quando a senha for alterada
-userSchema.pre('save', function (next) {
-  if (!this.isModified('password') || this.isNew) return next();
-
-  this.passwordChangedAt = Date.now() - 1000; // Subtrai 1 segundo para garantir que o token seja criado após a alteração da senha
-  next();
-});
-
-// Middleware para não mostrar usuários inativos
-userSchema.pre(/^find/, function (next) {
-  // this aponta para a query atual
-  this.find({ active: { $ne: false } });
-  next();
-});
-
-// Método para verificar se a senha está correta
-userSchema.methods.correctPassword = async function (candidatePassword, userPassword) {
-  return await bcrypt.compare(candidatePassword, userPassword);
+  // Caso contrário, usar o banco principal
+  const { sequelize } = require('../config/database');
+  return sequelize;
 };
 
-// Método para verificar se a senha foi alterada após o token JWT ser emitido
-userSchema.methods.changedPasswordAfter = function (JWTTimestamp) {
+const sequelize = getSequelize();
+
+/**
+ * Modelo de Usuário Simplificado para PostgreSQL usando Sequelize
+ * Contém apenas os campos essenciais para cadastro
+ */
+const User = sequelize.define('User', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+    allowNull: false,
+    comment: 'ID único do usuário (chave primária)'
+  },
+  fullName: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    validate: {
+      notEmpty: {
+        msg: 'Nome completo é obrigatório'
+      },
+      len: {
+        args: [2, 255],
+        msg: 'Nome completo deve ter entre 2 e 255 caracteres'
+      }
+    },
+    comment: 'Nome completo do usuário'
+  },
+  email: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    unique: {
+      name: 'unique_email',
+      msg: 'Este email já está cadastrado'
+    },
+    validate: {
+      isEmail: {
+        msg: 'Email deve ter um formato válido'
+      },
+      notEmpty: {
+        msg: 'Email é obrigatório'
+      }
+    },
+    comment: 'Email único do usuário'
+  },
+  password: {
+    type: DataTypes.STRING(255),
+    allowNull: false,
+    validate: {
+      len: {
+        args: [8, 255],
+        msg: 'Senha deve ter pelo menos 8 caracteres'
+      },
+      notEmpty: {
+        msg: 'Senha é obrigatória'
+      }
+    },
+    comment: 'Senha criptografada do usuário'
+  },
+  passwordConfirm: {
+    type: DataTypes.VIRTUAL,
+    allowNull: true, // Tornando opcional
+    validate: {
+      isPasswordMatch(value) {
+        // Só valida se o valor for fornecido
+        if (value && value !== this.password) {
+          throw new Error('Senha e confirmação de senha devem ser iguais');
+        }
+      }
+    },
+    comment: 'Campo virtual para confirmação de senha'
+  },
+  role: {
+    type: DataTypes.ENUM('user', 'admin', 'organizer'),
+    defaultValue: 'user',
+    allowNull: false,
+    validate: {
+      isIn: {
+        args: [['user', 'admin', 'organizer']],
+        msg: 'Role deve ser user, admin ou organizer'
+      }
+    },
+    comment: 'Papel do usuário no sistema'
+  }
+}, {
+  tableName: 'users',
+  timestamps: true, // Adiciona createdAt e updatedAt automaticamente
+  paranoid: false, // Não usar soft delete
+  indexes: [
+    {
+      unique: true,
+      fields: ['email'],
+      name: 'idx_users_email'
+    }
+  ],
+  hooks: {
+    // Hook para criptografar a senha antes de salvar
+    beforeCreate: async (user) => {
+      if (user.password) {
+        user.password = await bcrypt.hash(user.password, 12);
+      }
+    },
+    beforeUpdate: async (user) => {
+      if (user.changed('password')) {
+        user.password = await bcrypt.hash(user.password, 12);
+      }
+    }
+  }
+});
+
+// Método de instância para verificar senha
+User.prototype.correctPassword = async function(candidatePassword) {
+  return await bcrypt.compare(candidatePassword, this.password);
+};
+
+// Método para verificar se a senha foi alterada após o token ser emitido
+User.prototype.changedPasswordAfter = function(JWTTimestamp) {
   if (this.passwordChangedAt) {
-    const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10);
+    const changedTimestamp = parseInt(
+      this.passwordChangedAt.getTime() / 1000,
+      10
+    );
     return JWTTimestamp < changedTimestamp;
   }
-
-  // Falso significa que a senha NÃO foi alterada
+  // Falso significa que a senha não foi alterada
   return false;
 };
-
-const User = mongoose.model('User', userSchema);
 
 module.exports = User;

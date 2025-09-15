@@ -1,121 +1,122 @@
-const mongoose = require('mongoose');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
-const hackathonSchema = new mongoose.Schema(
-  {
-    title: {
-      type: String,
-      required: [true, 'Um hackathon precisa ter um título'],
-      trim: true,
-      maxlength: [100, 'Um título de hackathon não pode ter mais de 100 caracteres'],
-      minlength: [5, 'Um título de hackathon precisa ter pelo menos 5 caracteres'],
-    },
-    description: {
-      type: String,
-      required: [true, 'Um hackathon precisa ter uma descrição'],
-      trim: true,
-    },
-    startDate: {
-      type: Date,
-      required: [true, 'Um hackathon precisa ter uma data de início'],
-    },
-    endDate: {
-      type: Date,
-      required: [true, 'Um hackathon precisa ter uma data de término'],
-      validate: {
-        validator: function (value) {
-          return value > this.startDate;
-        },
-        message: 'A data de término deve ser posterior à data de início',
-      },
-    },
-    location: {
-      type: String,
-      required: [true, 'Um hackathon precisa ter uma localização'],
-      trim: true,
-    },
-    maxParticipants: {
-      type: Number,
-      default: 100,
-    },
-    registrationDeadline: {
-      type: Date,
-      required: [true, 'Um hackathon precisa ter uma data limite para inscrições'],
-      validate: {
-        validator: function (value) {
-          return value < this.startDate;
-        },
-        message: 'A data limite para inscrições deve ser anterior à data de início',
-      },
-    },
-    prizes: [
-      {
-        place: {
-          type: String,
-          required: [true, 'Um prêmio precisa ter uma colocação'],
-          enum: ['1º lugar', '2º lugar', '3º lugar', 'Menção honrosa'],
-        },
-        description: {
-          type: String,
-          required: [true, 'Um prêmio precisa ter uma descrição'],
-        },
-        value: {
-          type: Number,
-        },
-      },
-    ],
-    organizer: {
-      type: mongoose.Schema.ObjectId,
-      ref: 'User',
-      required: [true, 'Um hackathon precisa ter um organizador'],
-    },
-    participants: [
-      {
-        type: mongoose.Schema.ObjectId,
-        ref: 'User',
-      },
-    ],
-    teams: [
-      {
-        name: {
-          type: String,
-          required: [true, 'Uma equipe precisa ter um nome'],
-          trim: true,
-        },
-        members: [
-          {
-            type: mongoose.Schema.ObjectId,
-            ref: 'User',
-          },
-        ],
-        project: {
-          name: String,
-          description: String,
-          repositoryUrl: String,
-        },
-      },
-    ],
-    status: {
-      type: String,
-      enum: ['planejado', 'inscrições abertas', 'em andamento', 'finalizado', 'cancelado'],
-      default: 'planejado',
-    },
+/**
+ * Modelo de Hackathon para PostgreSQL usando Sequelize
+ */
+const Hackathon = sequelize.define('Hackathon', {
+  id: {
+    type: DataTypes.UUID,
+    defaultValue: DataTypes.UUIDV4,
+    primaryKey: true,
+    allowNull: false
   },
-  {
-    timestamps: true,
-    toJSON: { virtuals: true },
-    toObject: { virtuals: true },
+  title: {
+    type: DataTypes.STRING(100),
+    allowNull: false,
+    validate: {
+      notEmpty: {
+        msg: 'Um hackathon precisa ter um título'
+      },
+      len: {
+        args: [5, 100],
+        msg: 'Um título de hackathon deve ter entre 5 e 100 caracteres'
+      }
+    }
+  },
+  description: {
+    type: DataTypes.TEXT,
+    allowNull: false,
+    validate: {
+      notEmpty: {
+        msg: 'Um hackathon precisa ter uma descrição'
+      }
+    }
+  },
+  startDate: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    validate: {
+      notEmpty: {
+        msg: 'Um hackathon precisa ter uma data de início'
+      }
+    }
+  },
+  endDate: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    validate: {
+      notEmpty: {
+        msg: 'Um hackathon precisa ter uma data de término'
+      },
+      isAfterStartDate(value) {
+        if (value <= this.startDate) {
+          throw new Error('A data de término deve ser posterior à data de início');
+        }
+      }
+    }
+  },
+  location: {
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      notEmpty: {
+        msg: 'Um hackathon precisa ter uma localização'
+      }
+    }
+  },
+  maxParticipants: {
+    type: DataTypes.INTEGER,
+    defaultValue: 100
+  },
+  registrationDeadline: {
+    type: DataTypes.DATE,
+    allowNull: false,
+    validate: {
+      notEmpty: {
+        msg: 'Um hackathon precisa ter uma data limite para inscrições'
+      },
+      isBeforeStartDate(value) {
+        if (value >= this.startDate) {
+          throw new Error('A data limite para inscrições deve ser anterior à data de início');
+        }
+      }
+    }
+  },
+  prizes: {
+    type: DataTypes.JSONB,
+    defaultValue: []
+  },
+  teams: {
+    type: DataTypes.JSONB,
+    defaultValue: []
+  },
+  status: {
+    type: DataTypes.ENUM('planejado', 'inscrições abertas', 'em andamento', 'finalizado', 'cancelado'),
+    defaultValue: 'planejado'
+  },
+  organizerId: {
+    type: DataTypes.UUID,
+    allowNull: false,
+    references: {
+      model: 'users',
+      key: 'id'
+    }
   }
-);
-
-// Middleware para popular o organizador e participantes
-hackathonSchema.pre(/^find/, function (next) {
-  this.populate({
-    path: 'organizer',
-    select: 'name email photo',
-  });
-  next();
+}, {
+  tableName: 'hackathons',
+  timestamps: true,
+  indexes: [
+    {
+      fields: ['organizerId']
+    },
+    {
+      fields: ['status']
+    },
+    {
+      fields: ['startDate', 'endDate']
+    }
+  ]
 });
-
-const Hackathon = mongoose.model('Hackathon', hackathonSchema);
 
 module.exports = Hackathon;

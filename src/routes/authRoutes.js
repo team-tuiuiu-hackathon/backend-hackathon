@@ -17,12 +17,12 @@ const router = express.Router();
  *           schema:
  *             type: object
  *             required:
- *               - name
+ *               - fullName
  *               - email
  *               - password
  *               - passwordConfirm
  *             properties:
- *               name:
+ *               fullName:
  *                 type: string
  *                 example: "João Silva"
  *               email:
@@ -32,14 +32,10 @@ const router = express.Router();
  *               password:
  *                 type: string
  *                 minLength: 8
- *                 example: "senha123"
+ *                 example: "senha123456"
  *               passwordConfirm:
  *                 type: string
- *                 example: "senha123"
- *               role:
- *                 type: string
- *                 enum: [user, admin, organizer]
- *                 default: user
+ *                 example: "senha123456"
  *     responses:
  *       201:
  *         description: Usuário criado com sucesso

@@ -1,11 +1,10 @@
-const mongoose = require('mongoose');
-const crypto = require('crypto');
+const { DataTypes } = require('sequelize');
+const { sequelize } = require('../config/database');
 
 /**
- * Schema para logs de auditoria imutáveis
- * Implementa sistema de logs criptografados com verificação de integridade
+ * Modelo de Log de Auditoria para PostgreSQL usando Sequelize
  */
-const auditLogSchema = new mongoose.Schema({
+const AuditLog = sequelize.define('AuditLog', {
   // Identificador único do log
   logId: {
     type: String,

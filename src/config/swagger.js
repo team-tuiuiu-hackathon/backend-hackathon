@@ -38,13 +38,13 @@ const options = {
       schemas: {
         User: {
           type: 'object',
-          required: ['name', 'email', 'password'],
+          required: ['fullName', 'email', 'password'],
           properties: {
             id: {
               type: 'string',
               description: 'ID único do usuário'
             },
-            name: {
+            fullName: {
               type: 'string',
               description: 'Nome completo do usuário'
             },
@@ -61,16 +61,6 @@ const options = {
             passwordConfirm: {
               type: 'string',
               description: 'Confirmação da senha'
-            },
-            role: {
-              type: 'string',
-              enum: ['user', 'admin', 'organizer'],
-              default: 'user',
-              description: 'Papel do usuário no sistema'
-            },
-            photo: {
-              type: 'string',
-              description: 'URL da foto do usuário'
             },
             active: {
               type: 'boolean',

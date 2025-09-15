@@ -1,5 +1,6 @@
 const Hackathon = require('../models/hackathonModel');
 const { AppError } = require('../middleware/errorHandler');
+const { Op } = require('sequelize');
 
 /**
  * Obtém todos os hackathons
@@ -11,42 +12,65 @@ exports.getAllHackathons = async (req, res, next) => {
     const excludedFields = ['page', 'sort', 'limit', 'fields'];
     excludedFields.forEach((el) => delete queryObj[el]);
 
-    // Filtros avançados
-    let queryStr = JSON.stringify(queryObj);
-    queryStr = queryStr.replace(/\b(gte|gt|lte|lt)\b/g, (match) => `$${match}`);
+    // Converter filtros para Sequelize
+    const whereClause = {};
+    
+    Object.keys(queryObj).forEach(key => {
+      const value = queryObj[key];
+      
+      if (typeof value === 'object') {
+        // Operadores de comparação
+        const operators = {};
+        if (value.gte) operators[Op.gte] = value.gte;
+        if (value.gt) operators[Op.gt] = value.gt;
+        if (value.lte) operators[Op.lte] = value.lte;
+        if (value.lt) operators[Op.lt] = value.lt;
+        
+        if (Object.keys(operators).length > 0) {
+          whereClause[key] = operators;
+        }
+      } else {
+        whereClause[key] = value;
+      }
+    });
 
-    let query = Hackathon.find(JSON.parse(queryStr));
-
-    // Ordenação
+    // Configurar ordenação
+    let order = [['createdAt', 'DESC']];
     if (req.query.sort) {
-      const sortBy = req.query.sort.split(',').join(' ');
-      query = query.sort(sortBy);
-    } else {
-      query = query.sort('-createdAt');
+      const sortFields = req.query.sort.split(',');
+      order = sortFields.map(field => {
+        if (field.startsWith('-')) {
+          return [field.substring(1), 'DESC'];
+        }
+        return [field, 'ASC'];
+      });
     }
 
-    // Limitação de campos
+    // Configurar campos selecionados
+    let attributes = undefined;
     if (req.query.fields) {
-      const fields = req.query.fields.split(',').join(' ');
-      query = query.select(fields);
-    } else {
-      query = query.select('-__v');
+      attributes = req.query.fields.split(',');
     }
 
     // Paginação
     const page = req.query.page * 1 || 1;
     const limit = req.query.limit * 1 || 10;
-    const skip = (page - 1) * limit;
-
-    query = query.skip(skip).limit(limit);
+    const offset = (page - 1) * limit;
 
     // Executar a query
-    const hackathons = await query;
+    const { count, rows: hackathons } = await Hackathon.findAndCountAll({
+      where: whereClause,
+      order,
+      attributes,
+      limit,
+      offset
+    });
 
     // Enviar resposta
     res.status(200).json({
       status: 'success',
       results: hackathons.length,
+      totalCount: count,
       data: {
         hackathons,
       },
@@ -61,7 +85,7 @@ exports.getAllHackathons = async (req, res, next) => {
  */
 exports.getHackathon = async (req, res, next) => {
   try {
-    const hackathon = await Hackathon.findById(req.params.id);
+    const hackathon = await Hackathon.findByPk(req.params.id);
 
     if (!hackathon) {
       return next(new AppError('Nenhum hackathon encontrado com esse ID', 404));
@@ -84,7 +108,7 @@ exports.getHackathon = async (req, res, next) => {
 exports.createHackathon = async (req, res, next) => {
   try {
     // Adiciona o usuário atual como organizador
-    req.body.organizer = req.user.id;
+    req.body.organizerId = req.user.id;
 
     const newHackathon = await Hackathon.create(req.body);
 
@@ -104,7 +128,7 @@ exports.createHackathon = async (req, res, next) => {
  */
 exports.updateHackathon = async (req, res, next) => {
   try {
-    const hackathon = await Hackathon.findById(req.params.id);
+    const hackathon = await Hackathon.findByPk(req.params.id);
 
     if (!hackathon) {
       return next(new AppError('Nenhum hackathon encontrado com esse ID', 404));
@@ -112,7 +136,7 @@ exports.updateHackathon = async (req, res, next) => {
 
     // Verificar se o usuário é o organizador ou um administrador
     if (
-      hackathon.organizer.id !== req.user.id &&
+      hackathon.organizerId !== req.user.id &&
       req.user.role !== 'admin'
     ) {
       return next(
@@ -120,19 +144,12 @@ exports.updateHackathon = async (req, res, next) => {
       );
     }
 
-    const updatedHackathon = await Hackathon.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      {
-        new: true,
-        runValidators: true,
-      }
-    );
+    await hackathon.update(req.body);
 
     res.status(200).json({
       status: 'success',
       data: {
-        hackathon: updatedHackathon,
+        hackathon,
       },
     });
   } catch (error) {
@@ -141,11 +158,11 @@ exports.updateHackathon = async (req, res, next) => {
 };
 
 /**
- * Exclui um hackathon pelo ID
+ * Deleta um hackathon pelo ID
  */
 exports.deleteHackathon = async (req, res, next) => {
   try {
-    const hackathon = await Hackathon.findById(req.params.id);
+    const hackathon = await Hackathon.findByPk(req.params.id);
 
     if (!hackathon) {
       return next(new AppError('Nenhum hackathon encontrado com esse ID', 404));
@@ -153,15 +170,13 @@ exports.deleteHackathon = async (req, res, next) => {
 
     // Verificar se o usuário é o organizador ou um administrador
     if (
-      hackathon.organizer.id !== req.user.id &&
+      hackathon.organizerId !== req.user.id &&
       req.user.role !== 'admin'
     ) {
       return next(
-        new AppError('Você não tem permissão para excluir este hackathon', 403)
+        new AppError('Você não tem permissão para deletar este hackathon', 403)
       );
     }
-
-    await Hackathon.findByIdAndDelete(req.params.id);
 
     res.status(204).json({
       status: 'success',
@@ -177,7 +192,7 @@ exports.deleteHackathon = async (req, res, next) => {
  */
 exports.registerForHackathon = async (req, res, next) => {
   try {
-    const hackathon = await Hackathon.findById(req.params.id);
+    const hackathon = await Hackathon.findByPk(req.params.id);
 
     if (!hackathon) {
       return next(new AppError('Nenhum hackathon encontrado com esse ID', 404));
@@ -191,7 +206,8 @@ exports.registerForHackathon = async (req, res, next) => {
     }
 
     // Verificar se o usuário já está registrado
-    if (hackathon.participants.includes(req.user.id)) {
+    const participants = hackathon.participants || [];
+    if (participants.includes(req.user.id)) {
       return next(
         new AppError('Você já está registrado neste hackathon', 400)
       );
@@ -200,7 +216,7 @@ exports.registerForHackathon = async (req, res, next) => {
     // Verificar se o limite de participantes foi atingido
     if (
       hackathon.maxParticipants &&
-      hackathon.participants.length >= hackathon.maxParticipants
+      participants.length >= hackathon.maxParticipants
     ) {
       return next(
         new AppError('Este hackathon já atingiu o limite de participantes', 400)
@@ -208,8 +224,8 @@ exports.registerForHackathon = async (req, res, next) => {
     }
 
     // Adicionar o usuário à lista de participantes
-    hackathon.participants.push(req.user.id);
-    await hackathon.save();
+    participants.push(req.user.id);
+    await hackathon.update({ participants });
 
     res.status(200).json({
       status: 'success',
@@ -228,21 +244,23 @@ exports.registerForHackathon = async (req, res, next) => {
  */
 exports.createTeam = async (req, res, next) => {
   try {
-    const hackathon = await Hackathon.findById(req.params.id);
+    const hackathon = await Hackathon.findByPk(req.params.id);
 
     if (!hackathon) {
       return next(new AppError('Nenhum hackathon encontrado com esse ID', 404));
     }
 
     // Verificar se o usuário está registrado no hackathon
-    if (!hackathon.participants.includes(req.user.id)) {
+    const participants = hackathon.participants || [];
+    if (!participants.includes(req.user.id)) {
       return next(
         new AppError('Você precisa estar registrado no hackathon para criar uma equipe', 400)
       );
     }
 
     // Verificar se o usuário já está em uma equipe
-    const userInTeam = hackathon.teams.some((team) =>
+    const teams = hackathon.teams || [];
+    const userInTeam = teams.some((team) =>
       team.members.includes(req.user.id)
     );
 
@@ -263,13 +281,14 @@ exports.createTeam = async (req, res, next) => {
       },
     };
 
-    hackathon.teams.push(newTeam);
-    await hackathon.save();
+    teams.push(newTeam);
+    await hackathon.update({ teams });
 
     res.status(201).json({
       status: 'success',
       message: 'Equipe criada com sucesso',
       data: {
+        hackathon,
         team: newTeam,
       },
     });

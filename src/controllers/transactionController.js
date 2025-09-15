@@ -3,6 +3,7 @@ const MultisigWallet = require('../models/multisigWalletModel');
 const NotificationService = require('../services/notificationService');
 const { validationResult } = require('express-validator');
 const { v4: uuidv4 } = require('uuid');
+const { Op } = require('sequelize');
 
 class TransactionController {
 
@@ -23,7 +24,7 @@ class TransactionController {
       const proposedBy = req.user.id;
 
       // Verificar se a carteira existe
-      const wallet = await MultisigWallet.findById(walletId);
+      const wallet = await MultisigWallet.findByPk(walletId);
       if (!wallet) {
         return res.status(404).json({
           status: 'error',
@@ -32,7 +33,9 @@ class TransactionController {
       }
 
       // Verificar se o usuário é participante da carteira
-      if (!wallet.isParticipant(proposedBy)) {
+      const participants = wallet.participants || [];
+      const isParticipant = participants.some(p => p.userId === proposedBy);
+      if (!isParticipant) {
         return res.status(403).json({
           status: 'error',
           message: 'Apenas participantes podem propor transações'
