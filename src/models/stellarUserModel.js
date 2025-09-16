@@ -1,16 +1,7 @@
 const { DataTypes } = require('sequelize');
+const { initializeSequelize } = require('../config/sequelizeConfig');
 
-const getSequelize = () => {
-  try {
-    const { sequelize } = require('../config/database');
-    return sequelize;
-  } catch (error) {
-    console.warn('Erro ao conectar com o banco de dados:', error.message);
-    return null;
-  }
-};
-
-const sequelize = getSequelize();
+const sequelize = initializeSequelize();
 
 // Se não conseguir conectar com o banco, retorna um modelo mock
 if (!sequelize) {

@@ -1,5 +1,25 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+const { initializeSequelize } = require('../config/sequelizeConfig');
+
+const sequelize = initializeSequelize();
+
+// Se não conseguir conectar com o banco, retorna um modelo mock
+if (!sequelize) {
+  console.warn('Usando modelo ServiceStatistics mock devido à falha na conexão com o banco');
+  module.exports = {
+    findOne: () => Promise.resolve(null),
+    create: () => Promise.resolve({}),
+    findByPk: () => Promise.resolve(null),
+    update: () => Promise.resolve([1]),
+    destroy: () => Promise.resolve(1),
+    findAll: () => Promise.resolve([]),
+    recordMetric: () => Promise.resolve({}),
+    getServiceStats: () => Promise.resolve({}),
+    getDailyStats: () => Promise.resolve([]),
+    getPerformanceMetrics: () => Promise.resolve({})
+  };
+  return;
+}
 
 /**
  * Modelo para estatísticas de uso dos serviços
