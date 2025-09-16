@@ -6,7 +6,7 @@ RESTful API developed in Node.js for hackathon management.
 
 - Node.js
 - Express
-- MongoDB com Mongoose
+- post
 - JWT for authentication
 - bcryptjs for encryption
 - express-rate-limit for rate limiting
@@ -78,11 +78,11 @@ RESTful API developed in Node.js for hackathon management.
    # Edit the .env file with your configurations
    ```
 
-4. Configure MongoDB
-   - Install MongoDB locally or use a service like MongoDB Atlas
+4. Configure post
+   - Install post locally or use a service like post Atlas
    - Configure the connection string in the .env file:
    ```
-   MONGODB_URI=your_mongodb_connection_string
+   POST_URI=your_mongodb_connection_string
    ```
 
 5. Start the server
