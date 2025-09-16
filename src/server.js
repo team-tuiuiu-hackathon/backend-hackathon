@@ -1,6 +1,6 @@
-const app = require('./app');
+const app = require('./app.js');
 const dotenv = require('dotenv');
-const { connectDB } = require('./config/database');
+const { initializeSequelize } = require('./config/sequelizeConfig');
 
 // Configuração das variáveis de ambiente
 dotenv.config();
@@ -11,12 +11,17 @@ const port = process.env.PORT || 3000;
 // Função para inicializar o servidor
 const startServer = async () => {
   try {
-    // Conexão com o banco de dados
-    await connectDB();
+    // Inicialização do Sequelize
+    const sequelize = initializeSequelize();
+    if (sequelize) {
+      console.log('Banco de dados conectado com sucesso');
+    } else {
+      console.log('Usando modelos mock devido à falha na conexão com o banco');
+    }
     
     // Inicialização do servidor
     const server = app.listen(port, () => {
-      console.log(`Servidor rodando na porta ${port} em modo ${process.env.NODE_ENV}`);
+      console.log(`Servidor rodando na porta ${port} em modo ${process.env.NODE_ENV || 'development'}`);
     });
 
     // Tratamento de exceções não tratadas

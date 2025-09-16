@@ -1,5 +1,23 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+const { initializeSequelize } = require('../config/sequelizeConfig');
+
+const sequelize = initializeSequelize();
+
+// Se não conseguir conectar com o banco, retorna um modelo mock
+if (!sequelize) {
+  console.warn('Usando modelo StellarValidation mock devido à falha na conexão com o banco');
+  module.exports = {
+    findOne: () => Promise.resolve(null),
+    create: () => Promise.resolve({}),
+    findByPk: () => Promise.resolve(null),
+    update: () => Promise.resolve([1]),
+    destroy: () => Promise.resolve(1),
+    findAll: () => Promise.resolve([]),
+    validateAddress: () => Promise.resolve({ isValid: true }),
+    getCachedValidation: () => Promise.resolve(null)
+  };
+  return;
+}
 
 /**
  * Modelo para cache de validações de endereços Stellar

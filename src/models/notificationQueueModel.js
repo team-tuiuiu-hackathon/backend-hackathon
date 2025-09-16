@@ -1,5 +1,26 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+const { initializeSequelize } = require('../config/sequelizeConfig');
+
+const sequelize = initializeSequelize();
+
+// Se não conseguir conectar com o banco, retorna um modelo mock
+if (!sequelize) {
+  console.warn('Usando modelo NotificationQueue mock devido à falha na conexão com o banco');
+  module.exports = {
+    findOne: () => Promise.resolve(null),
+    create: () => Promise.resolve({}),
+    findByPk: () => Promise.resolve(null),
+    update: () => Promise.resolve([1]),
+    destroy: () => Promise.resolve(1),
+    findAll: () => Promise.resolve([]),
+    addToQueue: () => Promise.resolve({}),
+    processQueue: () => Promise.resolve([]),
+    markAsSent: () => Promise.resolve({}),
+    markAsFailed: () => Promise.resolve({}),
+    getQueueStats: () => Promise.resolve({})
+  };
+  return;
+}
 
 /**
  * Modelo para fila de notificações

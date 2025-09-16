@@ -1,118 +1,69 @@
 const express = require('express');
-const morgan = require('morgan');
 const cors = require('cors');
 const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
-const dotenv = require('dotenv');
+const morgan = require('morgan');
+const swaggerUi = require('swagger-ui-express');
+const swaggerSpec = require('./config/swagger');
 
 // Importação de rotas
-const stellarAuthRoutes = require('./routes/stellarAuthRoutes');
-const hackathonRoutes = require('./routes/hackathonRoutes');
-const multisigWalletRoutes = require('./routes/multisigWalletRoutes');
-const transactionRoutes = require('./routes/transactionRoutes');
 const depositRoutes = require('./routes/depositRoutes');
-const paymentRoutes = require('./routes/paymentRoutes');
 const fundSplitRoutes = require('./routes/fundSplitRoutes');
+const multisigWalletRoutes = require('./routes/multisigWalletRoutes');
+const paymentRoutes = require('./routes/paymentRoutes');
+const stellarAuthRoutes = require('./routes/stellarAuthRoutes');
+const transactionRoutes = require('./routes/transactionRoutes');
 
-// Importação de middleware de erro
+// Importação de middlewares
 const errorHandler = require('./middleware/errorHandler');
 
-// Importação do Swagger
-const { specs, swaggerUi } = require('./config/swagger');
-
-// Configuração das variáveis de ambiente
-dotenv.config();
-
-// Inicialização do app Express
+// Criação da aplicação Express
 const app = express();
 
-// Middleware de segurança
-app.use(helmet({
-  contentSecurityPolicy: {
-    directives: {
-      defaultSrc: ["'self'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com"],
-      scriptSrc: ["'self'", "'unsafe-inline'"],
-      imgSrc: ["'self'", "data:", "https:"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com"],
-      connectSrc: ["'self'"],
-    },
-  },
-  crossOriginEmbedderPolicy: false
-}));
+// Middlewares de segurança e configuração
+app.use(helmet());
+app.use(cors());
+app.use(morgan('combined'));
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true }));
 
-// Rate limiting global
-const globalLimiter = rateLimit({
-  windowMs: 15 * 60 * 1000, // 15 minutos
-  max: 1000, // máximo 1000 requests por IP por janela de tempo
-  message: {
-    status: 'error',
-    message: 'Muitas requisições deste IP, tente novamente em 15 minutos.'
-  },
-  standardHeaders: true,
-  legacyHeaders: false
-});
-app.use(globalLimiter);
+// Documentação da API
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
-// Middleware for request body parsing
-app.use(express.json({ 
-  limit: '10kb'
-}));
-app.use(express.urlencoded({ extended: true, limit: '10kb' }));
-
-// Middleware for CORS with more secure configurations
-app.use(cors({
-  origin: process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',') : ['http://localhost:3000', 'http://127.0.0.1:3000'],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
-  credentials: true,
-  optionsSuccessStatus: 200
-}));
-
-// Middleware for logging in development
-if (process.env.NODE_ENV === 'development') {
-  app.use(morgan('dev'));
-}
-
-// API prefix
-const API_PREFIX = process.env.API_PREFIX || '/api/v1';
-
-// Swagger UI
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
-  explorer: true,
-  customCss: '.swagger-ui .topbar { display: none }',
-  customSiteTitle: 'Backend Hackathon API Documentation'
-}));
-
-// Routes
-// Rotas da API
-app.use(`${API_PREFIX}/stellar`, stellarAuthRoutes);
-app.use(`${API_PREFIX}/hackathons`, hackathonRoutes);
-app.use(`${API_PREFIX}/wallets`, multisigWalletRoutes);
-app.use(`${API_PREFIX}`, transactionRoutes);
-app.use(`${API_PREFIX}`, depositRoutes);
-app.use(`${API_PREFIX}`, paymentRoutes);
-app.use(`${API_PREFIX}`, fundSplitRoutes);
-
-// Route to check if the API is working
-app.get('/', (req, res) => {
+// Rota de health check
+app.get('/health', (req, res) => {
   res.status(200).json({
-    status: 'success',
-    message: 'Backend Hackathon API is working!',
+    status: 'OK',
+    timestamp: new Date().toISOString(),
+    uptime: process.uptime()
   });
 });
 
+// Rotas da API
+app.use('/api/deposits', depositRoutes);
+app.use('/api/fund-splits', fundSplitRoutes);
+app.use('/api/multisig-wallets', multisigWalletRoutes);
+app.use('/api/payments', paymentRoutes);
+app.use('/api/stellar-auth', stellarAuthRoutes);
+app.use('/api/transactions', transactionRoutes);
 
-
-// Middleware for routes not found
-app.all('*', (req, res, next) => {
-  res.status(404).json({
-    status: 'error',
-    message: `Could not find ${req.originalUrl} on this server!`,
+// Rota padrão
+app.get('/', (req, res) => {
+  res.json({
+    message: 'Backend Hackathon API',
+    version: '1.0.0',
+    documentation: '/api-docs'
   });
 });
 
-// Middleware for error handling
+// Middleware de tratamento de erros (deve ser o último)
 app.use(errorHandler);
+
+// Middleware para rotas não encontradas
+app.use('*', (req, res) => {
+  res.status(404).json({
+    error: 'Rota não encontrada',
+    path: req.originalUrl
+  });
+});
 
 module.exports = app;
