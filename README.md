@@ -1,111 +1,140 @@
-# Backend Hackathon
+# Backend – Zelo Platform
 
-RESTful API developed in Node.js for hackathon management.
+API RESTful desenvolvida em **Node.js + Express** para gestão financeira transparente e segura em condomínios.
+O backend dá suporte à plataforma **Zelo**, que resolve os principais problemas de administração condominial com carteiras multisig, divisão automática de despesas e registros auditáveis on-chain.
 
-## Technologies Used
+---
 
-- Node.js
-- Express
-- post
-- JWT for authentication
-- bcryptjs for encryption
-- express-rate-limit for rate limiting
-- express-validator for validation
-- helmet for security
-- uuid for unique identifiers
+## 🚨 Problema
 
-## Project Structure
+A gestão financeira de condomínios é complexa:
+
+* Síndicos e administradores têm dificuldade em gerenciar recursos coletivos.
+* Falta de transparência gera desconfiança e conflitos entre moradores.
+* Aprovações de pagamentos são burocráticas e pouco participativas.
+* Divisão de despesas é manual e sujeita a erros.
+
+Impacto:
+
+* **+500 mil condomínios** no Brasil (residenciais e comerciais).
+* **+30 milhões de moradores** afetados.
+* **R\$165 bilhões/ano** em fluxo de receita condominial (\~US\$32B).
+
+---
+
+## 💡 Solução – Zelo
+
+Uma API que conecta condomínio, síndico e conselho em um modelo **seguro, transparente e colaborativo**:
+
+* **Carteiras Multisig** → pagamentos aprovados conjuntamente pelo síndico e conselho.
+* **Divisão automática de despesas** → proporcional (percentual) ou fixa.
+* **Transações em USDC** → dólar digital estável, baixo risco de volatilidade.
+* **Governança on-chain** → registros imutáveis, auditáveis e com recuperação de acesso segura.
+
+---
+
+## ⚙️ Tecnologias Utilizadas
+
+* **Backend**: Node.js, Express, PostgreSQL
+* **Autenticação**: JWT, controle de acesso baseado em papéis
+* **Segurança**: bcryptjs, helmet, express-rate-limit, express-validator, OWASP best practices
+* **Identificação**: uuid
+* **Blockchain**: Stellar (StellarSDK, StellarExpert, StellarLab, StellarWalletKit, Soroban smart contracts)
+* **Stablecoin**: USDC para transações estáveis
+* **AI Tools**: TRAE, Cursor, ChatGPT, Gemini, Deepseek
+
+---
+
+## 📂 Estrutura do Projeto
 
 ```
 ├── src/
-│   ├── config/         # Project configurations
-│   ├── controllers/    # Application controllers
-│   ├── middleware/     # Custom middlewares
-│   ├── models/         # Database models
-│   ├── routes/         # API routes
-│   ├── app.js          # Express configuration
-│   └── server.js       # Application entry point
-├── .env                # Environment variables
-├── .env.example        # Environment variables example
-├── .gitignore          # Files ignored by Git
-├── package.json        # Dependencies and scripts
-└── README.md           # Project documentation
+│   ├── config/         # Configurações do projeto
+│   ├── controllers/    # Lógica dos endpoints
+│   ├── middleware/     # Middlewares customizados
+│   ├── models/         # Modelos do banco de dados
+│   ├── routes/         # Rotas da API
+│   ├── app.js          # Configuração do Express
+│   └── server.js       # Ponto de entrada da aplicação
+├── .env                # Variáveis de ambiente
+├── .env.example        # Exemplo de variáveis
+├── package.json        # Dependências e scripts
+└── README.md           # Documentação
 ```
 
-## Features
+---
 
-### Authentication
-- User registration
-- JWT login
-- Route protection
-- Role-based access control
+## 🚀 Funcionalidades
 
-### Users
-- Complete user CRUD
-- Profile updates
-- Password changes
+### Autenticação
 
-### Hackathons
-- Complete hackathon CRUD
-- Participant registration
-- Team creation
-- Project management
+* Registro de usuários
+* Login com JWT
+* Proteção de rotas
+* RBAC (Role-Based Access Control)
 
+### Usuários
 
+* CRUD completo
+* Atualização de perfil
+* Alteração de senha
 
-## How to Run
+### Condomínios
 
-1. Clone the repository
+* Criação e gestão de carteiras multisig
+* Aprovação de pagamentos colaborativa
+* Rateio automático de despesas
+* Logs e governança on-chain
+
+---
+
+## ▶️ Como Rodar
+
+1. Clone o repositório
+
    ```bash
-   git clone https://github.com/your-username/backend-hackathon.git
-   cd backend-hackathon
+   git clone https://github.com/your-username/zelo-backend.git
+   cd zelo-backend
    ```
 
-2. Install dependencies
+2. Instale as dependências
+
    ```bash
    npm install
    ```
 
-3. Configure environment variables
+3. Configure as variáveis de ambiente
+
    ```bash
    cp .env.example .env
-   # Edit the .env file with your configurations
+   # Edite com suas configurações
    ```
 
-4. Configure post
-   - Install post locally or use a service like post Atlas
-   - Configure the connection string in the .env file:
-   ```
-   POST_URI=your_mongodb_connection_string
-   ```
+4. Configure o banco de dados PostgreSQL e ajuste a conexão no `.env`
 
-5. Start the server
+5. Inicie o servidor
+
    ```bash
-   # Development mode
+   # Modo desenvolvimento
    npm run dev
-   
-   # Production mode
+
+   # Modo produção
    npm start
    ```
 
-## API Endpoints
+---
 
-### Authentication
-- `POST /api/v1/auth/signup` - Register a new user
-- `POST /api/v1/auth/login` - Login
-- `PATCH /api/v1/auth/updateMyPassword` - Update password
+## 🌐 Endpoints Principais
 
-### Users
-- `GET /api/v1/users` - List all users (admin)
-- `GET /api/v1/users/:id` - Get a specific user (admin)
-- `PATCH /api/v1/users/updateMe` - Update current user profile
-- `DELETE /api/v1/users/deleteMe` - Deactivate current user account
+### Autenticação
 
-### Hackathons
-- `GET /api/v1/hackathons` - List all hackathons
-- `GET /api/v1/hackathons/:id` - Get a specific hackathon
-- `POST /api/v1/hackathons` - Create a new hackathon
-- `PATCH /api/v1/hackathons/:id` - Update a hackathon
-- `DELETE /api/v1/hackathons/:id` - Delete a hackathon
-- `POST /api/v1/hackathons/:id/register` - Register for a hackathon
-- `POST /api/v1/hackathons/:id/teams` - Create a team in a hackathon
+* `POST /api/v1/auth/signup` → Criar usuário
+* `POST /api/v1/auth/login` → Login
+* `PATCH /api/v1/auth/updateMyPassword` → Alterar senha
+
+### Condomínios
+
+* `POST /api/v1/condos` → Criar condomínio
+* `POST /api/v1/condos/:id/wallet` → Criar carteira multisig
+* `POST /api/v1/condos/:id/expenses` → Registrar despesa
+* `PATCH /api/v1/condos/:id/approve` → Aprovar pagamento
