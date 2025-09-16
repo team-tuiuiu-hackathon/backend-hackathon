@@ -37,8 +37,29 @@ const createSendToken = (user, statusCode, res) => {
  */
 const isValidEthereumAddress = (address) => {
   try {
+    // Verifica se o endereço não está vazio e tem o formato correto
+    if (!address || typeof address !== 'string') {
+      return false;
+    }
+    
+    // Remove espaços em branco e converte para lowercase para evitar problemas de checksum
+    address = address.trim().toLowerCase();
+    
+    // Verifica se começa com 0x e tem 42 caracteres
+    if (!address.startsWith('0x') || address.length !== 42) {
+      return false;
+    }
+    
+    // Verifica se contém apenas caracteres hexadecimais válidos
+    const hexPattern = /^0x[a-fA-F0-9]{40}$/i;
+    if (!hexPattern.test(address)) {
+      return false;
+    }
+    
+    // Usa ethers.isAddress para validação (mais flexível que getAddress)
     return ethers.isAddress(address);
   } catch (error) {
+    console.error('Erro na validação do endereço:', error.message);
     return false;
   }
 };
@@ -52,9 +73,7 @@ const generateSignMessage = (walletAddress, nonce) => {
 Endereço da carteira: ${walletAddress}
 Nonce: ${nonce}
 
-Esta solicitação não custará nenhuma taxa de gás.
-
-Timestamp: ${new Date().toISOString()}`;
+Esta solicitação não custará nenhuma taxa de gás.`;
 };
 
 /**
@@ -66,13 +85,13 @@ exports.generateNonce = async (req, res, next) => {
     const { walletAddress } = req.body;
 
     // Validação do endereço da carteira
-    if (!walletAddress) {
-      return next(new AppError('Endereço da carteira é obrigatório', 400));
-    }
+  if (!walletAddress) {
+    return next(new AppError('Endereço da carteira é obrigatório', 400));
+  }
 
-    if (!isValidEthereumAddress(walletAddress)) {
-      return next(new AppError('Endereço da carteira inválido', 400));
-    }
+  if (!isValidEthereumAddress(walletAddress)) {
+    return next(new AppError('Endereço da carteira inválido', 400));
+  }
 
     // Criar ou encontrar usuário Web3
     const user = await Web3User.createOrUpdate(walletAddress);
@@ -120,15 +139,20 @@ exports.generateNonce = async (req, res, next) => {
  */
 exports.verifySignature = async (req, res, next) => {
   try {
-    const { walletAddress, signature, nonce } = req.body;
+    const { walletAddress, signature } = req.body;
 
     // Validação dos campos obrigatórios
-    if (!walletAddress || !signature || !nonce) {
-      return next(new AppError('Endereço da carteira, assinatura e nonce são obrigatórios', 400));
+    if (!walletAddress || !signature) {
+      return next(new AppError('Endereço da carteira e assinatura são obrigatórios', 400));
     }
 
     if (!isValidEthereumAddress(walletAddress)) {
       return next(new AppError('Endereço da carteira inválido', 400));
+    }
+
+    // Validação básica do formato da assinatura
+    if (!signature.startsWith('0x') || signature.length !== 132) {
+      return next(new AppError('Formato de assinatura inválido. A assinatura deve ter 132 caracteres e começar com 0x', 400));
     }
 
     // Buscar usuário pelo endereço da carteira
@@ -145,10 +169,8 @@ exports.verifySignature = async (req, res, next) => {
       return next(new AppError('Nonce inválido ou expirado. Gere um novo nonce.', 401));
     }
 
-    // Verificar se o nonce fornecido corresponde ao armazenado
-    if (user.nonce !== nonce) {
-      return next(new AppError('Nonce não corresponde ao gerado', 401));
-    }
+    // Usar o nonce armazenado no banco de dados
+    const nonce = user.nonce;
 
     // Gerar mensagem original que foi assinada
     const originalMessage = generateSignMessage(walletAddress, nonce);

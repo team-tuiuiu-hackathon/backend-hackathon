@@ -76,7 +76,6 @@ router.post('/web3/nonce', web3AuthController.generateNonce);
  *             required:
  *               - walletAddress
  *               - signature
- *               - nonce
  *             properties:
  *               walletAddress:
  *                 type: string
@@ -85,12 +84,9 @@ router.post('/web3/nonce', web3AuthController.generateNonce);
  *                 description: "Endereço da carteira Ethereum"
  *               signature:
  *                 type: string
- *                 example: "0x1234567890abcdef..."
- *                 description: "Assinatura da mensagem"
- *               nonce:
- *                 type: string
- *                 example: "a1b2c3d4e5f6..."
- *                 description: "Nonce gerado anteriormente"
+ *                 pattern: '^0x[a-fA-F0-9]{130}$'
+ *                 example: "0x1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1234567890abcdef1b"
+ *                 description: "Assinatura da mensagem (132 caracteres incluindo 0x)"
  *     responses:
  *       200:
  *         description: Login Web3 realizado com sucesso
