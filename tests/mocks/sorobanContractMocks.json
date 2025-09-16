@@ -1,0 +1,363 @@
+{
+  "contractInfo": {
+    "name": "Soroban Multisig Wallet Contract",
+    "description": "Mocks para contrato inteligente multisig na rede Stellar Soroban",
+    "version": "1.0.0",
+    "network": "testnet"
+  },
+  
+  "initializationMocks": {
+    "initializeContract": {
+      "description": "Mock para inicialização do contrato",
+      "input": {
+        "contractAddress": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQAHHAGCM4J2"
+      },
+      "output": {
+        "success": true,
+        "contractAddress": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQAHHAGCM4J2",
+        "contractData": {
+          "initialized": true,
+          "version": "1.0.0",
+          "network": "testnet"
+        }
+      },
+      "errors": [
+        {
+          "condition": "contractAddress não configurado",
+          "error": "Endereço do contrato multisig não configurado"
+        }
+      ]
+    },
+    
+    "createMultisigWallet": {
+      "description": "Mock para criação de carteira multisig",
+      "input": {
+        "owners": [
+          {"publicKey": "GABC123..."},
+          {"publicKey": "GDEF456..."},
+          {"publicKey": "GHIJ789..."}
+        ],
+        "threshold": 2,
+        "name": "Carteira Multisig Exemplo"
+      },
+      "output": {
+        "success": true,
+        "walletId": "MOCK_WALLET_ID_12345",
+        "contractAddress": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQAHHAGCM4J2",
+        "txHash": "MOCK_TX_HASH_ABCDEF123456"
+      },
+      "errors": [
+        {
+          "condition": "threshold inválido",
+          "error": "Threshold deve ser menor ou igual ao número de proprietários"
+        },
+        {
+          "condition": "owners vazio",
+          "error": "Lista de proprietários não pode estar vazia"
+        }
+      ]
+    }
+  },
+  
+  "stateUpdateMocks": {
+    "proposeTransaction": {
+      "description": "Mock para proposta de transação",
+      "input": {
+        "walletId": "MOCK_WALLET_ID_12345",
+        "to": "GDESTINATION123...",
+        "amount": 100.50,
+        "memo": "Pagamento para fornecedor",
+        "proposer": {
+          "secretKey": "SPROPOSER_SECRET_KEY..."
+        }
+      },
+      "output": {
+        "success": true,
+        "transactionId": "MOCK_TRANSACTION_ID_789",
+        "txHash": "MOCK_TX_HASH_PROPOSE_123",
+        "blockNumber": 12345678
+      },
+      "errors": [
+        {
+          "condition": "carteira não encontrada",
+          "error": "Carteira multisig não encontrada"
+        },
+        {
+          "condition": "proposer não autorizado",
+          "error": "Usuário não é proprietário da carteira"
+        }
+      ]
+    },
+    
+    "signTransaction": {
+      "description": "Mock para assinatura de transação",
+      "input": {
+        "transactionId": "MOCK_TRANSACTION_ID_789",
+        "signature": "MOCK_SIGNATURE_XDR...",
+        "signer": {
+          "secretKey": "SSIGNER_SECRET_KEY..."
+        }
+      },
+      "output": {
+        "success": true,
+        "txHash": "MOCK_TX_HASH_SIGN_456",
+        "blockNumber": 12345679,
+        "signatureCount": 2
+      },
+      "errors": [
+        {
+          "condition": "transação não encontrada",
+          "error": "Transação não encontrada"
+        },
+        {
+          "condition": "já assinado",
+          "error": "Usuário já assinou esta transação"
+        }
+      ]
+    },
+    
+    "executeTransaction": {
+      "description": "Mock para execução de transação aprovada",
+      "input": {
+        "transactionId": "MOCK_TRANSACTION_ID_789",
+        "executor": {
+          "secretKey": "SEXECUTOR_SECRET_KEY..."
+        }
+      },
+      "output": {
+        "success": true,
+        "txHash": "MOCK_TX_HASH_EXECUTE_789",
+        "blockNumber": 12345680,
+        "gasUsed": 21000
+      },
+      "errors": [
+        {
+          "condition": "assinaturas insuficientes",
+          "error": "Número de assinaturas insuficiente para execução"
+        },
+        {
+          "condition": "transação já executada",
+          "error": "Transação já foi executada"
+        }
+      ]
+    },
+    
+    "processDeposit": {
+      "description": "Mock para processamento de depósito USDC",
+      "input": {
+        "walletId": "MOCK_WALLET_ID_12345",
+        "amount": 500.00,
+        "fromAddress": "GFROM_ADDRESS_123...",
+        "txHash": "MOCK_DEPOSIT_TX_HASH_ABC"
+      },
+      "output": {
+        "success": true,
+        "txHash": "MOCK_PROCESS_DEPOSIT_HASH_DEF",
+        "blockNumber": 12345681,
+        "confirmations": 1
+      },
+      "errors": [
+        {
+          "condition": "transação não encontrada",
+          "error": "Transação não encontrada na blockchain"
+        },
+        {
+          "condition": "depósito inválido",
+          "error": "Depósito USDC inválido"
+        }
+      ]
+    },
+    
+    "processPayment": {
+      "description": "Mock para processamento de pagamento USDC",
+      "input": {
+        "walletId": "MOCK_WALLET_ID_12345",
+        "recipientAddress": "GRECIPIENT_ADDRESS_456...",
+        "amount": 250.75,
+        "memo": "Pagamento de dividendos"
+      },
+      "output": {
+        "success": true,
+        "txHash": "MOCK_PAYMENT_TX_HASH_GHI",
+        "blockNumber": 12345682,
+        "gasUsed": 15000
+      },
+      "errors": [
+        {
+          "condition": "saldo insuficiente",
+          "error": "Saldo insuficiente na carteira"
+        },
+        {
+          "condition": "endereço inválido",
+          "error": "Endereço do destinatário inválido"
+        }
+      ]
+    }
+  },
+  
+  "stateReadMocks": {
+    "getWalletBalance": {
+      "description": "Mock para consulta de saldo da carteira",
+      "input": {
+        "walletId": "MOCK_WALLET_ID_12345"
+      },
+      "output": {
+        "balance": 1250.50,
+        "currency": "USDC"
+      },
+      "errors": [
+        {
+          "condition": "carteira não encontrada",
+          "error": "Carteira não encontrada"
+        }
+      ]
+    },
+    
+    "getSignatureCount": {
+      "description": "Mock para consulta do número de assinaturas",
+      "input": {
+        "transactionId": "MOCK_TRANSACTION_ID_789"
+      },
+      "output": {
+        "signatureCount": 2,
+        "requiredSignatures": 2,
+        "isApproved": true
+      },
+      "errors": [
+        {
+          "condition": "transação não encontrada",
+          "error": "Transação não encontrada"
+        }
+      ]
+    },
+    
+    "getTransactionDetails": {
+      "description": "Mock para consulta de detalhes da transação",
+      "input": {
+        "txHash": "MOCK_TX_HASH_ABCDEF123456"
+      },
+      "output": {
+        "success": true,
+        "transaction": {
+          "hash": "MOCK_TX_HASH_ABCDEF123456",
+          "ledger": 12345678,
+          "createdAt": "2024-01-15T10:30:00.000Z",
+          "fee": 100,
+          "operations": [
+            {
+              "type": "invoke_contract",
+              "function": "create_wallet"
+            }
+          ],
+          "memo": "Criação de carteira multisig"
+        }
+      },
+      "errors": [
+        {
+          "condition": "hash inválido",
+          "error": "Hash da transação inválido"
+        }
+      ]
+    },
+    
+    "getNetworkStatus": {
+      "description": "Mock para consulta do status da rede",
+      "input": {},
+      "output": {
+        "success": true,
+        "network": {
+          "status": "healthy",
+          "latestLedger": 12345690,
+          "networkPassphrase": "Test SDF Network ; September 2015",
+          "contractAddress": "CDLZFC3SYJYDZT7K67VZ75HPJVIEUVNIXF47ZG2FB2RMQQAHHAGCM4J2"
+        }
+      },
+      "errors": [
+        {
+          "condition": "rede indisponível",
+          "error": "Falha ao verificar status da rede"
+        }
+      ]
+    }
+  },
+  
+  "validationMocks": {
+    "validateUSDCDeposit": {
+      "description": "Mock para validação de depósito USDC",
+      "input": {
+        "txDetails": {
+          "operations": [
+            {
+              "type": "payment",
+              "asset_code": "USDC",
+              "asset_issuer": "GCKFBEIYTKP5RDBKPKDAFLQVJJN7RLQVMXPKWJ5QJQJQJQJQJQJQJQJQ",
+              "amount": "500.00"
+            }
+          ]
+        },
+        "walletId": "MOCK_WALLET_ID_12345",
+        "expectedAmount": 500.00
+      },
+      "output": {
+        "isValid": true,
+        "validationDetails": {
+          "assetMatch": true,
+          "amountMatch": true,
+          "issuerMatch": true
+        }
+      },
+      "errors": [
+        {
+          "condition": "asset inválido",
+          "error": "Asset não é USDC"
+        },
+        {
+          "condition": "valor incorreto",
+          "error": "Valor do depósito não confere"
+        }
+      ]
+    }
+  },
+  
+  "genericVariables": {
+    "n_integrantes": 3,
+    "saldo_atual": 1250.50,
+    "percentual_divisao": 33.33,
+    "threshold_minimo": 2,
+    "taxa_transacao": 100,
+    "tempo_expiracao": 30,
+    "confirmacoes_minimas": 1
+  },
+  
+  "testScenarios": {
+    "cenario_sucesso_completo": {
+      "description": "Fluxo completo de criação, depósito, proposta, assinatura e execução",
+      "steps": [
+        "initializeContract",
+        "createMultisigWallet", 
+        "processDeposit",
+        "proposeTransaction",
+        "signTransaction",
+        "executeTransaction"
+      ]
+    },
+    
+    "cenario_falha_threshold": {
+      "description": "Tentativa de execução sem assinaturas suficientes",
+      "steps": [
+        "createMultisigWallet",
+        "proposeTransaction",
+        "signTransaction (apenas 1 assinatura)",
+        "executeTransaction (deve falhar)"
+      ]
+    },
+    
+    "cenario_saldo_insuficiente": {
+      "description": "Tentativa de pagamento com saldo insuficiente",
+      "steps": [
+        "createMultisigWallet",
+        "processPayment (valor > saldo, deve falhar)"
+      ]
+    }
+  }
+}

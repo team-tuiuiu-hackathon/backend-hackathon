@@ -51,13 +51,7 @@ RESTful API developed in Node.js for hackathon management.
 - Team creation
 - Project management
 
-### Smart Contracts
-- Ethereum wallet connection and management
-- Secure transaction execution
-- Wallet address validation
-- Rate limiting for critical operations
-- Activity logging and monitoring
-- Advanced security middleware
+
 
 ## How to Run
 

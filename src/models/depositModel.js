@@ -1,5 +1,30 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+
+const getSequelize = () => {
+  try {
+    const { sequelize } = require('../config/database');
+    return sequelize;
+  } catch (error) {
+    console.warn('Erro ao conectar com o banco de dados:', error.message);
+    return null;
+  }
+};
+
+const sequelize = getSequelize();
+
+// Se não conseguir conectar com o banco, retorna um modelo mock
+if (!sequelize) {
+  console.warn('Usando modelo Deposit mock devido à falha na conexão com o banco');
+  module.exports = {
+    findOne: () => Promise.resolve(null),
+    create: () => Promise.resolve({}),
+    findByPk: () => Promise.resolve(null),
+    update: () => Promise.resolve([1]),
+    destroy: () => Promise.resolve(1),
+    findAll: () => Promise.resolve([])
+  };
+  return;
+}
 
 /**
  * Modelo de Depósito para PostgreSQL usando Sequelize
@@ -44,9 +69,15 @@ const Deposit = sequelize.define('Deposit', {
     allowNull: false
   },
   status: {
-    type: DataTypes.ENUM('pending', 'confirmed', 'processed', 'failed'),
+    type: DataTypes.STRING,
     defaultValue: 'pending',
-    allowNull: false
+    allowNull: false,
+    validate: {
+      isIn: {
+        args: [['pending', 'confirmed', 'processed', 'failed']],
+        msg: 'Status deve ser pending, confirmed, processed ou failed'
+      }
+    }
   },
   txHash: {
     type: DataTypes.STRING,

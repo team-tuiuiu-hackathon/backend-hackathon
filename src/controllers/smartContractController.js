@@ -619,36 +619,87 @@ class SmartContractController {
     }
   }
 
-  // Métodos de persistência simulados (substituir por implementação real do banco)
-  static walletStorage = new Map();
-
-  static async saveWallet(wallet) {
-    SmartContractController.walletStorage.set(wallet.id, wallet);
-    return wallet;
+  // Métodos de persistência usando banco de dados
+  static async saveWallet(walletData) {
+    try {
+      // Se já existe um wallet com esse ID, atualiza
+      if (walletData.id) {
+        const existingWallet = await Wallet.findByPk(walletData.id);
+        if (existingWallet) {
+          await existingWallet.update(walletData);
+          return existingWallet;
+        }
+      }
+      
+      // Cria novo wallet
+      const wallet = await Wallet.create(walletData);
+      return wallet;
+    } catch (error) {
+      console.error('Erro ao salvar wallet:', error.message);
+      throw error;
+    }
   }
 
   static async findWalletById(id) {
-    return SmartContractController.walletStorage.get(id) || null;
+    try {
+      const wallet = await Wallet.findByPk(id);
+      return wallet;
+    } catch (error) {
+      console.error('Erro ao buscar wallet por ID:', error.message);
+      return null;
+    }
   }
 
   static async findWalletByAddress(address) {
-    for (const wallet of SmartContractController.walletStorage.values()) {
-      if (wallet.address === address) {
-        return wallet;
-      }
+    try {
+      const wallet = await Wallet.findOne({
+        where: { address }
+      });
+      return wallet;
+    } catch (error) {
+      console.error('Erro ao buscar wallet por endereço:', error.message);
+      return null;
     }
-    return null;
   }
 
   static async getAllWallets({ status, page = 1, limit = 10 }) {
-    let wallets = Array.from(SmartContractController.walletStorage.values());
-    
-    if (status) {
-      wallets = wallets.filter(wallet => wallet.connectionStatus === status);
+    try {
+      const whereClause = {};
+      
+      if (status) {
+        whereClause.connectionStatus = status;
+      }
+      
+      const offset = (page - 1) * limit;
+      
+      const { rows: wallets, count } = await Wallet.findAndCountAll({
+        where: whereClause,
+        limit: parseInt(limit),
+        offset: parseInt(offset),
+        order: [['createdAt', 'DESC']]
+      });
+      
+      return {
+        wallets,
+        pagination: {
+          currentPage: parseInt(page),
+          totalPages: Math.ceil(count / limit),
+          totalItems: count,
+          itemsPerPage: parseInt(limit)
+        }
+      };
+    } catch (error) {
+      console.error('Erro ao buscar wallets:', error.message);
+      return {
+        wallets: [],
+        pagination: {
+          currentPage: 1,
+          totalPages: 0,
+          totalItems: 0,
+          itemsPerPage: parseInt(limit)
+        }
+      };
     }
-    
-    const startIndex = (page - 1) * limit;
-    return wallets.slice(startIndex, startIndex + limit);
   }
 }
 

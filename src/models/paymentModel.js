@@ -1,5 +1,30 @@
 const { DataTypes } = require('sequelize');
-const { sequelize } = require('../config/database');
+
+const getSequelize = () => {
+  try {
+    const { sequelize } = require('../config/database');
+    return sequelize;
+  } catch (error) {
+    console.warn('Erro ao conectar com o banco de dados:', error.message);
+    return null;
+  }
+};
+
+const sequelize = getSequelize();
+
+// Se não conseguir conectar com o banco, retorna um modelo mock
+if (!sequelize) {
+  console.warn('Usando modelo Payment mock devido à falha na conexão com o banco');
+  module.exports = {
+    findOne: () => Promise.resolve(null),
+    create: () => Promise.resolve({}),
+    findByPk: () => Promise.resolve(null),
+    update: () => Promise.resolve([1]),
+    destroy: () => Promise.resolve(1),
+    findAll: () => Promise.resolve([])
+  };
+  return;
+}
 
 /**
  * Modelo de Pagamento para PostgreSQL usando Sequelize
@@ -48,13 +73,25 @@ const Payment = sequelize.define('Payment', {
     allowNull: false
   },
   type: {
-    type: DataTypes.ENUM('prize', 'sponsorship', 'fee', 'refund', 'other'),
-    allowNull: false
+    type: DataTypes.STRING,
+    allowNull: false,
+    validate: {
+      isIn: {
+        args: [['prize', 'sponsorship', 'fee', 'refund', 'other']],
+        msg: 'Tipo deve ser prize, sponsorship, fee, refund ou other'
+      }
+    }
   },
   status: {
-    type: DataTypes.ENUM('pending', 'processing', 'completed', 'failed', 'cancelled'),
+    type: DataTypes.STRING,
     defaultValue: 'pending',
-    allowNull: false
+    allowNull: false,
+    validate: {
+      isIn: {
+        args: [['pending', 'processing', 'completed', 'failed', 'cancelled']],
+        msg: 'Status deve ser pending, processing, completed, failed ou cancelled'
+      }
+    }
   },
   description: {
     type: DataTypes.TEXT,

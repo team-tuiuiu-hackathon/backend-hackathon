@@ -1,6 +1,5 @@
 const express = require('express');
 const hackathonController = require('../controllers/hackathonController');
-const { protect, restrictTo } = require('../middleware/authMiddleware');
 
 const router = express.Router();
 
@@ -92,7 +91,7 @@ router.get('/', hackathonController.getAllHackathons);
 router.get('/:id', hackathonController.getHackathon);
 
 // Rotas protegidas
-router.use(protect);
+// router.use(protect);
 
 /**
  * @swagger

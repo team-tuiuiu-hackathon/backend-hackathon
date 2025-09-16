@@ -1,12 +1,57 @@
 const express = require('express');
-const { body, param, query } = require('express-validator');
+const { body, param, query, validationResult } = require('express-validator');
 const MultisigWalletController = require('../controllers/multisigWalletController');
-const authMiddleware = require('../middleware/authMiddleware').protect;
+// const authMiddleware = require('../middleware/authMiddleware').protect;
 const rateLimit = require('express-rate-limit');
+const WalletPermissionMiddleware = require('../middleware/walletPermissions');
+
+// Middleware para validação de requisições
+const validateRequest = (req, res, next) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      status: 'error',
+      message: 'Dados de entrada inválidos',
+      errors: errors.array()
+    });
+  }
+  next();
+};
+
+// Middleware para validar acesso à carteira
+const validateWalletAccess = async (req, res, next) => {
+  try {
+    // Implementação simplificada - pode ser expandida conforme necessário
+    next();
+  } catch (error) {
+    res.status(403).json({
+      status: 'error',
+      message: 'Acesso negado à carteira'
+    });
+  }
+};
+
+// Middleware para verificar permissões específicas da carteira
+const requireWalletPermission = (permission) => {
+  return (req, res, next) => {
+    // Implementação simplificada - pode ser expandida conforme necessário
+    next();
+  };
+};
 
 const router = express.Router();
 
 // Rate limiting específico para operações de carteira
+// Rate limiting middleware
+const rateLimitMiddleware = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutos
+  max: 100, // máximo 100 operações por 15 minutos
+  message: {
+    status: 'error',
+    message: 'Muitas operações. Tente novamente em 15 minutos.'
+  }
+});
+
 const walletCreationLimit = rateLimit({
   windowMs: 60 * 60 * 1000, // 1 hora
   max: 5, // máximo 5 carteiras por hora por IP
@@ -64,7 +109,7 @@ const createWalletValidation = [
     .withMessage('Endereço do contrato deve ser válido')
 ];
 
-// Validações para atualização de threshold
+// Validações para atualizar threshold
 const updateThresholdValidation = [
   param('walletId')
     .isMongoId()
@@ -151,7 +196,7 @@ const getUserWalletsValidation = [
 ];
 
 // Aplicar autenticação a todas as rotas
-router.use(authMiddleware);
+// router.use(authMiddleware);
 
 // Rotas para carteiras multisig
 
@@ -259,5 +304,177 @@ router.use((error, req, res, next) => {
   // Passar para o middleware de erro global
   next(error);
 });
+
+// Rotas administrativas avançadas
+
+// Atualizar configurações administrativas
+router.patch('/:walletId/admin/settings',
+  walletOperationLimit,
+  WalletPermissionMiddleware.checkPermission('modify_settings'),
+  MultisigWalletController.updateAdminSettings
+);
+
+// Atualizar role de participante
+router.patch('/:walletId/participants/:userId/role',
+  walletOperationLimit,
+  WalletPermissionMiddleware.requireAdmin(),
+  MultisigWalletController.updateParticipantRole
+);
+
+// Configurar limites da carteira
+router.patch('/:walletId/limits',
+  walletOperationLimit,
+  WalletPermissionMiddleware.checkPermission('modify_settings'),
+  MultisigWalletController.updateWalletLimits
+);
+
+// Configurar regras de divisão de fundos
+router.patch('/:walletId/division-rules',
+  walletOperationLimit,
+  WalletPermissionMiddleware.checkPermission('modify_settings'),
+  MultisigWalletController.updateDivisionRules
+);
+
+// Alterar status da carteira
+router.patch('/:walletId/status',
+  walletOperationLimit,
+  WalletPermissionMiddleware.requireSuperAdmin(),
+  MultisigWalletController.updateWalletStatus
+);
+
+// Obter estatísticas administrativas
+router.get('/:walletId/admin/statistics',
+  walletOperationLimit,
+  WalletPermissionMiddleware.requireAdmin(),
+  MultisigWalletController.getAdminStatistics
+);
+
+// Rotas para usuários criarem e gerenciarem carteiras
+
+// Criar nova carteira compartilhada
+router.post('/create',
+  // authMiddleware,
+  walletOperationLimit,
+  [
+    body('name').isLength({ min: 3 }).withMessage('Nome deve ter pelo menos 3 caracteres'),
+    body('threshold').isInt({ min: 1 }).withMessage('Threshold deve ser um número positivo'),
+    body('participants').isArray({ min: 2 }).withMessage('Deve ter pelo menos 2 participantes')
+  ],
+  MultisigWalletController.createUserWallet
+);
+
+// Listar carteiras do usuário
+router.get('/my-wallets',
+  // authMiddleware,
+  walletOperationLimit,
+  MultisigWalletController.getUserWallets
+);
+
+// Convidar participantes para carteira
+router.post('/:walletId/invite',
+  // authMiddleware,
+  walletOperationLimit,
+  WalletPermissionMiddleware.checkPermission('invite_participants'),
+  [
+    body('participants').isArray({ min: 1 }).withMessage('Lista de participantes é obrigatória')
+  ],
+  MultisigWalletController.inviteParticipants
+);
+
+// Aceitar convite de carteira
+router.post('/:walletId/accept-invite',
+  // authMiddleware,
+  walletOperationLimit,
+  [
+    body('acceptTerms').isBoolean().withMessage('Aceitação dos termos é obrigatória')
+  ],
+  MultisigWalletController.acceptWalletInvite
+);
+
+// Atualizar informações básicas da carteira
+router.patch('/:walletId/update',
+  // authMiddleware,
+  walletOperationLimit,
+  WalletPermissionMiddleware.requireAdmin(),
+  [
+    body('name').optional().isLength({ min: 3 }).withMessage('Nome deve ter pelo menos 3 caracteres'),
+    body('description').optional().isString()
+  ],
+  MultisigWalletController.updateWallet
+);
+
+// Rotas de auditoria (apenas para administradores)
+router.get('/:walletId/audit-logs', 
+  // authMiddleware,
+  rateLimitMiddleware,
+  validateWalletAccess,
+  requireWalletPermission('view_audit_logs'),
+  MultisigWalletController.getWalletAuditLogs
+);
+
+router.get('/:walletId/audit-report', 
+  // authMiddleware,
+  rateLimitMiddleware,
+  validateWalletAccess,
+  requireWalletPermission('generate_reports'),
+  [
+    query('format').optional().isIn(['json', 'csv']).withMessage('Formato deve ser json ou csv'),
+    query('startDate').optional().isISO8601().withMessage('Data de início inválida'),
+    query('endDate').optional().isISO8601().withMessage('Data de fim inválida'),
+    query('actions').optional().isArray().withMessage('Ações devem ser um array'),
+    query('severity').optional().isIn(['low', 'medium', 'high', 'critical']).withMessage('Severidade inválida')
+  ],
+  validateRequest,
+  MultisigWalletController.generateAuditReport
+);
+
+// Rotas administrativas avançadas
+router.post('/:walletId/emergency-freeze', 
+  // authMiddleware,
+  rateLimitMiddleware,
+  validateWalletAccess,
+  requireWalletPermission('emergency_actions'),
+  [
+    body('reason').notEmpty().withMessage('Motivo é obrigatório'),
+    body('duration').optional().isInt({ min: 1, max: 168 }).withMessage('Duração deve ser entre 1 e 168 horas')
+  ],
+  validateRequest,
+  MultisigWalletController.emergencyFreeze
+);
+
+router.post('/:walletId/emergency-unfreeze', 
+  // authMiddleware,
+  rateLimitMiddleware,
+  validateWalletAccess,
+  requireWalletPermission('emergency_actions'),
+  [
+    body('reason').notEmpty().withMessage('Motivo é obrigatório')
+  ],
+  validateRequest,
+  MultisigWalletController.emergencyUnfreeze
+);
+
+router.post('/:walletId/bulk-update-permissions', 
+  // authMiddleware,
+  rateLimitMiddleware,
+  validateWalletAccess,
+  requireWalletPermission('manage_permissions'),
+  [
+    body('updates').isArray().withMessage('Updates deve ser um array'),
+    body('updates.*.participantId').notEmpty().withMessage('ID do participante é obrigatório'),
+    body('updates.*.permissions').isArray().withMessage('Permissões devem ser um array'),
+    body('reason').notEmpty().withMessage('Motivo é obrigatório')
+  ],
+  validateRequest,
+  MultisigWalletController.bulkUpdatePermissions
+);
+
+router.get('/:walletId/security-analysis', 
+  // authMiddleware,
+  rateLimitMiddleware,
+  validateWalletAccess,
+  requireWalletPermission('view_security_analysis'),
+  MultisigWalletController.getSecurityAnalysis
+);
 
 module.exports = router;

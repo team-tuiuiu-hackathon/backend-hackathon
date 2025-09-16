@@ -8,26 +8,38 @@ dotenv.config();
 // Porta do servidor
 const port = process.env.PORT || 3000;
 
-// Conexão com o banco de dados
-connectDB();
+// Função para inicializar o servidor
+const startServer = async () => {
+  try {
+    // Conexão com o banco de dados
+    await connectDB();
+    
+    // Inicialização do servidor
+    const server = app.listen(port, () => {
+      console.log(`Servidor rodando na porta ${port} em modo ${process.env.NODE_ENV}`);
+    });
 
-// Inicialização do servidor
-const server = app.listen(port, () => {
-  console.log(`Servidor rodando na porta ${port} em modo ${process.env.NODE_ENV}`);
-});
+    // Tratamento de exceções não tratadas
+    process.on('unhandledRejection', (err) => {
+      console.error('ERRO NÃO TRATADO! 💥 Encerrando...');
+      console.error(err.name, err.message);
+      server.close(() => {
+        process.exit(1);
+      });
+    });
 
-// Tratamento de exceções não tratadas
-process.on('unhandledRejection', (err) => {
-  console.error('ERRO NÃO TRATADO! 💥 Encerrando...');
-  console.error(err.name, err.message);
-  server.close(() => {
+    process.on('SIGTERM', () => {
+      console.log('👋 SIGTERM RECEBIDO. Encerrando graciosamente');
+      server.close(() => {
+        console.log('💥 Processo encerrado!');
+      });
+    });
+
+  } catch (error) {
+    console.error('Erro ao inicializar o servidor:', error);
     process.exit(1);
-  });
-});
+  }
+};
 
-process.on('SIGTERM', () => {
-  console.log('👋 SIGTERM RECEBIDO. Encerrando graciosamente');
-  server.close(() => {
-    console.log('💥 Processo encerrado!');
-  });
-});
+// Inicializar o servidor
+startServer();

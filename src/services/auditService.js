@@ -631,6 +631,358 @@ class AuditService {
 
     return Buffer.from(csvRows.join('\n'));
   }
+  /**
+   * Registra uma ação de carteira compartilhada
+   */
+  async logWalletAction(data, context = {}) {
+    const {
+      action,
+      walletId,
+      targetUserId = null,
+      targetUserEmail = null,
+      oldValues = null,
+      newValues = null,
+      metadata = {},
+      severity = 'medium',
+      description = '',
+      correlationId = null
+    } = data;
+
+  try {
+    const logData = {
+      eventType: this._mapActionToEventType(action),
+      category: 'wallet',
+      severity,
+      resourceType: 'wallet',
+      resourceId: walletId,
+      action,
+      result: 'success',
+      description: description || this._generateWalletDescription(action, metadata),
+      eventData: JSON.stringify({
+        walletId,
+        targetUserId,
+        targetUserEmail,
+        action,
+        metadata
+      }),
+      previousState: oldValues ? JSON.stringify(oldValues) : null,
+      newState: newValues ? JSON.stringify(newValues) : null,
+      correlationId: correlationId || this.generateCorrelationId(),
+      tags: ['wallet', 'multisig', action],
+      complianceFlags: {
+        gdprRelevant: true,
+        pciRelevant: false,
+        soxRelevant: true
+      }
+    };
+
+    return await this.createLog(logData, context);
+  } catch (error) {
+    console.error('Erro ao registrar log de carteira:', error);
+    await this.createErrorLog(error, data, context);
+    throw error;
+  }
+}
+
+  /**
+   * Registra uma ação de transação
+   */
+  async logTransactionAction(data, context = {}) {
+    const {
+      action,
+      transactionId,
+      walletId,
+      amount = null,
+      oldValues = null,
+      newValues = null,
+      metadata = {},
+      severity = 'medium',
+      description = '',
+      correlationId = null
+    } = data;
+
+    try {
+      const logData = {
+        eventType: this._mapTransactionActionToEventType(action),
+        category: 'transaction',
+        severity,
+        resourceType: 'transaction',
+        resourceId: transactionId,
+        action,
+        result: 'success',
+        description: description || this._generateTransactionDescription(action, metadata),
+        eventData: JSON.stringify({
+          transactionId,
+          walletId,
+          amount,
+          action,
+          metadata
+        }),
+        previousState: oldValues ? JSON.stringify(oldValues) : null,
+        newState: newValues ? JSON.stringify(newValues) : null,
+        correlationId: correlationId || this.generateCorrelationId(),
+        tags: ['transaction', 'multisig', action],
+        complianceFlags: {
+          gdprRelevant: true,
+          pciRelevant: true,
+          soxRelevant: true
+        }
+      };
+
+      return await this.createLog(logData, context);
+    } catch (error) {
+      console.error('Erro ao registrar log de transação:', error);
+      await this.createErrorLog(error, data, context);
+      throw error;
+    }
+  }
+
+  /**
+   * Registra uma ação de participante
+   */
+  async logParticipantAction(data, context = {}) {
+    const {
+      action,
+      targetUserId,
+      targetUserEmail,
+      walletId,
+      oldValues = null,
+      newValues = null,
+      metadata = {},
+      severity = 'medium',
+      description = '',
+      correlationId = null
+    } = data;
+
+    try {
+      const logData = {
+        eventType: this._mapParticipantActionToEventType(action),
+        category: 'authorization',
+        severity,
+        resourceType: 'user',
+        resourceId: targetUserId,
+        action,
+        result: 'success',
+        description: description || this._generateParticipantDescription(action, metadata),
+        eventData: JSON.stringify({
+          walletId,
+          targetUserId,
+          targetUserEmail,
+          action,
+          metadata
+        }),
+        previousState: oldValues ? JSON.stringify(oldValues) : null,
+        newState: newValues ? JSON.stringify(newValues) : null,
+        correlationId: correlationId || this.generateCorrelationId(),
+        tags: ['participant', 'authorization', action],
+        complianceFlags: {
+          gdprRelevant: true,
+          pciRelevant: false,
+          soxRelevant: true
+        }
+      };
+
+      return await this.createLog(logData, context);
+    } catch (error) {
+      console.error('Erro ao registrar log de participante:', error);
+      await this.createErrorLog(error, data, context);
+      throw error;
+    }
+  }
+
+  /**
+   * Registra uma falha de ação
+   */
+  async logFailedAction(data, context = {}) {
+    const {
+      action,
+      resourceType,
+      resourceId,
+      error,
+      metadata = {},
+      severity = 'high',
+      correlationId = null
+    } = data;
+
+    try {
+      const logData = {
+        eventType: 'system_error',
+        category: 'security',
+        severity,
+        resourceType,
+        resourceId,
+        action,
+        result: 'failure',
+        description: `Falha ao executar ${action}: ${error.message}`,
+        errorDetails: {
+          code: error.code || 'UNKNOWN_ERROR',
+          message: error.message,
+          stack: error.stack
+        },
+        correlationId: correlationId || this.generateCorrelationId(),
+        tags: ['error', 'failure', action],
+        complianceFlags: {
+          gdprRelevant: false,
+          pciRelevant: false,
+          soxRelevant: true
+        }
+      };
+
+      return await this.createLog(logData, context);
+    } catch (auditError) {
+      console.error('Erro ao registrar falha de ação:', auditError);
+      throw auditError;
+    }
+  }
+
+  /**
+   * Gera relatório de auditoria para uma carteira
+   */
+  async generateWalletAuditReport(walletId, startDate, endDate) {
+  try {
+    const filters = {
+      resourceId: walletId,
+      resourceType: 'wallet',
+      startDate,
+      endDate
+    };
+
+    const logs = await this.searchLogs(filters, { limit: 1000 });
+
+    const report = {
+      walletId,
+      period: { startDate, endDate },
+      totalEvents: logs.length,
+      eventsByType: {},
+      eventsByCategory: {},
+      eventsBySeverity: {},
+      participantActions: [],
+      transactionActions: [],
+      adminActions: [],
+      securityEvents: []
+    };
+
+    logs.forEach(log => {
+      // Contagem por tipo
+      report.eventsByType[log.eventType] = (report.eventsByType[log.eventType] || 0) + 1;
+      
+      // Contagem por categoria
+      report.eventsByCategory[log.category] = (report.eventsByCategory[log.category] || 0) + 1;
+      
+      // Contagem por severidade
+      report.eventsBySeverity[log.severity] = (report.eventsBySeverity[log.severity] || 0) + 1;
+  
+      // Classificação de ações
+      if (log.category === 'authorization') {
+        report.participantActions.push(log);
+      } else if (log.category === 'transaction') {
+        report.transactionActions.push(log);
+      } else if (log.action.includes('admin') || log.severity === 'high') {
+        report.adminActions.push(log);
+      }
+  
+      if (log.severity === 'critical' || log.result === 'failure') {
+        report.securityEvents.push(log);
+      }
+    });
+
+    return report;
+  } catch (error) {
+    console.error('Erro ao gerar relatório de auditoria:', error);
+    throw error;
+  }
+}
+
+  /**
+   * Métodos auxiliares privados
+   */
+  _mapActionToEventType(action) {
+  const mapping = {
+    'create_wallet': 'wallet_creation',
+    'update_wallet': 'wallet_modification',
+    'delete_wallet': 'wallet_deletion',
+    'add_participant': 'permission_change',
+    'remove_participant': 'permission_change',
+    'update_role': 'permission_change',
+    'update_settings': 'wallet_modification',
+    'update_limits': 'wallet_modification',
+    'update_division_rules': 'fund_split_rule_modification',
+    'invite_participant': 'permission_change',
+    'accept_invite': 'permission_change',
+    'decline_invite': 'permission_change'
+  };
+  
+  return mapping[action] || 'admin_action';
+}
+
+  _mapTransactionActionToEventType(action) {
+  const mapping = {
+    'propose_transaction': 'transaction_creation',
+    'sign_transaction': 'transaction_approval',
+    'approve_transaction': 'transaction_approval',
+    'reject_transaction': 'transaction_rejection',
+    'execute_transaction': 'transaction_execution',
+    'remove_signature': 'transaction_approval'
+  };
+  
+  return mapping[action] || 'transaction_creation';
+}
+
+  _mapParticipantActionToEventType(action) {
+  const mapping = {
+    'add_participant': 'permission_change',
+    'remove_participant': 'permission_change',
+    'update_role': 'permission_change',
+    'invite_participant': 'permission_change',
+    'accept_invite': 'permission_change',
+    'decline_invite': 'permission_change'
+  };
+  
+  return mapping[action] || 'permission_change';
+}
+
+  _generateWalletDescription(action, metadata) {
+  const descriptions = {
+    'create_wallet': `Carteira compartilhada criada: ${metadata.walletName || 'N/A'}`,
+    'update_wallet': `Configurações da carteira atualizadas`,
+    'add_participant': `Participante adicionado: ${metadata.participantEmail || 'N/A'}`,
+    'remove_participant': `Participante removido: ${metadata.participantEmail || 'N/A'}`,
+    'update_role': `Role do participante atualizada para: ${metadata.newRole || 'N/A'}`,
+    'update_settings': `Configurações administrativas atualizadas`,
+    'update_limits': `Limites de transação atualizados`,
+    'invite_participant': `Convite enviado para: ${metadata.inviteEmail || 'N/A'}`,
+    'accept_invite': `Convite aceito para carteira: ${metadata.walletName || 'N/A'}`,
+    'decline_invite': `Convite recusado para carteira: ${metadata.walletName || 'N/A'}`
+  };
+  
+  return descriptions[action] || `Ação executada: ${action}`;
+}
+
+  _generateTransactionDescription(action, metadata) {
+  const descriptions = {
+    'propose_transaction': `Transação proposta: ${metadata.amount || 'N/A'} para ${metadata.recipient || 'N/A'}`,
+    'sign_transaction': `Transação assinada`,
+    'approve_transaction': `Transação aprovada`,
+    'reject_transaction': `Transação rejeitada: ${metadata.reason || 'N/A'}`,
+    'execute_transaction': `Transação executada: ${metadata.txHash || 'N/A'}`,
+    'remove_signature': `Assinatura removida da transação`
+  };
+  
+  return descriptions[action] || `Ação de transação: ${action}`;
+}
+
+  _generateParticipantDescription(action, metadata) {
+    const descriptions = {
+      'add_participant': `Participante ${metadata.participantEmail || 'N/A'} adicionado com role: ${metadata.role || 'N/A'}`,
+      'remove_participant': `Participante ${metadata.participantEmail || 'N/A'} removido`,
+      'update_role': `Role do participante ${metadata.participantEmail || 'N/A'} atualizada para: ${metadata.newRole || 'N/A'}`,
+      'invite_participant': `Convite enviado para ${metadata.inviteEmail || 'N/A'}`,
+      'accept_invite': `${metadata.participantEmail || 'N/A'} aceitou convite`,
+      'decline_invite': `${metadata.participantEmail || 'N/A'} recusou convite`
+    };
+
+    return descriptions[action] || `Ação de participante: ${action}`;
+  }
 }
 
 module.exports = AuditService;
