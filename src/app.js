@@ -6,8 +6,8 @@ const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
 
 // Importação de rotas
-const userRoutes = require('./routes/userRoutes');
 const authRoutes = require('./routes/authRoutes');
+const stellarAuthRoutes = require('./routes/stellarAuthRoutes');
 const hackathonRoutes = require('./routes/hackathonRoutes');
 const smartContractRoutes = require('./routes/smartContractRoutes');
 const multisigWalletRoutes = require('./routes/multisigWalletRoutes');
@@ -59,15 +59,7 @@ app.use(globalLimiter);
 
 // Middleware for request body parsing
 app.use(express.json({ 
-  limit: '10kb',
-  verify: (req, res, buf) => {
-    try {
-      JSON.parse(buf);
-    } catch (e) {
-      res.status(400).json({ status: 'error', message: 'Invalid JSON' });
-      return;
-    }
-  }
+  limit: '10kb'
 }));
 app.use(express.urlencoded({ extended: true, limit: '10kb' }));
 
@@ -96,8 +88,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
 }));
 
 // Routes
-app.use(`${API_PREFIX}/users`, userRoutes);
+// Rotas da API
 app.use(`${API_PREFIX}/auth`, authRoutes);
+app.use(`${API_PREFIX}/stellar`, stellarAuthRoutes);
 app.use(`${API_PREFIX}/hackathons`, hackathonRoutes);
 app.use(`${API_PREFIX}/wallets`, multisigWalletRoutes);
 app.use(`${API_PREFIX}`, transactionRoutes);

@@ -3,6 +3,7 @@ const MultisigWallet = require('../models/multisigWalletModel');
 const NotificationService = require('../services/notificationService');
 const { validationResult } = require('express-validator');
 const { v4: uuidv4 } = require('uuid');
+const { Op } = require('sequelize');
 
 class DepositController {
 
@@ -29,7 +30,7 @@ class DepositController {
       const userId = req.user.id;
 
       // Verificar se a carteira existe
-      const wallet = await MultisigWallet.findById(walletId);
+      const wallet = await MultisigWallet.findByPk(walletId);
       if (!wallet) {
         return res.status(404).json({
           status: 'error',
@@ -38,7 +39,9 @@ class DepositController {
       }
 
       // Verificar se o usuário é participante da carteira
-      if (!wallet.isParticipant(userId)) {
+      const participants = wallet.participants || [];
+      const isParticipant = participants.some(p => p.userId === userId);
+      if (!isParticipant) {
         return res.status(403).json({
           status: 'error',
           message: 'Apenas participantes da carteira podem registrar depósitos'
@@ -47,7 +50,9 @@ class DepositController {
 
       // Verificar se já existe um depósito com este txHash
       if (txHash) {
-        const existingDeposit = await Deposit.findOne({ 'blockchainData.txHash': txHash });
+        const existingDeposit = await Deposit.findOne({ 
+          where: { txHash } 
+        });
         if (existingDeposit) {
           return res.status(409).json({
             status: 'error',
@@ -65,29 +70,19 @@ class DepositController {
         amount: parseFloat(amount),
         currency: 'USDC',
         status: txHash ? 'confirming' : 'pending',
-        blockchainData: {
-          fromAddress,
-          toAddress: wallet.contractAddress,
-          requiredConfirmations,
-          confirmations: txHash ? 1 : 0
-        },
-        metadata: {
-          memo,
-          userIP: req.ip,
-          userAgent: req.get('User-Agent'),
-          confirmationAttempts: 0
-        }
+        fromAddress,
+        toAddress: wallet.contractAddress,
+        requiredConfirmations,
+        confirmations: txHash ? 1 : 0,
+        txHash: txHash || null,
+        memo,
+        userIP: req.ip,
+        userAgent: req.get('User-Agent'),
+        confirmationAttempts: txHash ? 1 : 0
       };
 
-      // Se txHash foi fornecido, adicionar dados da blockchain
-      if (txHash) {
-        depositData.blockchainData.txHash = txHash;
-        depositData.metadata.confirmationAttempts = 1;
-      }
-
       // Salvar depósito no banco
-      const deposit = new Deposit(depositData);
-      await deposit.save();
+      const deposit = await Deposit.create(depositData);
 
       // BE16 - Emitir evento para frontend se txHash foi fornecido
       if (txHash) {

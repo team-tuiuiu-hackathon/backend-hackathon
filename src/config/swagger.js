@@ -36,54 +36,7 @@ const options = {
         }
       },
       schemas: {
-        User: {
-          type: 'object',
-          required: ['name', 'email', 'password'],
-          properties: {
-            id: {
-              type: 'string',
-              description: 'ID único do usuário'
-            },
-            name: {
-              type: 'string',
-              description: 'Nome completo do usuário'
-            },
-            email: {
-              type: 'string',
-              format: 'email',
-              description: 'Email do usuário'
-            },
-            password: {
-              type: 'string',
-              minLength: 8,
-              description: 'Senha do usuário (mínimo 8 caracteres)'
-            },
-            passwordConfirm: {
-              type: 'string',
-              description: 'Confirmação da senha'
-            },
-            role: {
-              type: 'string',
-              enum: ['user', 'admin', 'organizer'],
-              default: 'user',
-              description: 'Papel do usuário no sistema'
-            },
-            photo: {
-              type: 'string',
-              description: 'URL da foto do usuário'
-            },
-            active: {
-              type: 'boolean',
-              default: true,
-              description: 'Status ativo do usuário'
-            },
-            createdAt: {
-              type: 'string',
-              format: 'date-time',
-              description: 'Data de criação'
-            }
-          }
-        },
+
         Wallet: {
           type: 'object',
           required: ['address', 'network'],
@@ -246,6 +199,65 @@ const options = {
               type: 'string',
               format: 'date-time',
               description: 'Data de criação'
+            }
+          }
+        },
+        Web3User: {
+          type: 'object',
+          required: ['walletAddress'],
+          properties: {
+            id: {
+              type: 'string',
+              description: 'ID único do usuário Web3'
+            },
+            walletAddress: {
+              type: 'string',
+              pattern: '^0x[a-fA-F0-9]{40}$',
+              description: 'Endereço da carteira Web3 (formato Ethereum)'
+            },
+            fullName: {
+              type: 'string',
+              description: 'Nome completo do usuário (opcional)'
+            },
+            email: {
+              type: 'string',
+              format: 'email',
+              description: 'Email do usuário (opcional)'
+            },
+            role: {
+              type: 'string',
+              enum: ['user', 'admin', 'organizer'],
+              default: 'user',
+              description: 'Papel do usuário no sistema'
+            },
+            nonce: {
+              type: 'string',
+              description: 'Nonce único para autenticação'
+            },
+            nonceExpiry: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Data de expiração do nonce'
+            },
+            lastLogin: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Data do último login'
+            },
+            isActive: {
+              type: 'boolean',
+              default: true,
+              description: 'Status ativo do usuário'
+            },
+            createdAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Data de criação'
+            },
+            updatedAt: {
+              type: 'string',
+              format: 'date-time',
+              description: 'Data de atualização'
             }
           }
         },

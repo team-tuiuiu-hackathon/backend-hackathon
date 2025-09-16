@@ -1,4 +1,5 @@
 const request = require('supertest');
+const { sequelize } = require('../src/config/database');
 const app = require('../src/app');
 const Wallet = require('../src/models/walletModel');
 const SmartContractController = require('../src/controllers/smartContractController');
@@ -8,16 +9,26 @@ describe('Smart Contract API', () => {
   let testWallet;
 
   beforeAll(async () => {
+    // Conectar ao banco de dados de teste
+    await sequelize.authenticate();
+    await sequelize.sync({ force: true }); // Recria as tabelas para testes
+    
     // Mock de autenticação para testes
     authToken = 'mock-jwt-token';
-    
-    // Limpar storage de carteiras para testes
-    SmartContractController.walletStorage.clear();
   });
 
-  beforeEach(() => {
-    // Limpar storage antes de cada teste
-    SmartContractController.walletStorage.clear();
+  beforeEach(async () => {
+    // Limpar dados antes de cada teste
+    try {
+      await Wallet.destroy({ where: {}, force: true });
+    } catch (error) {
+      // Ignorar erros de limpeza nos testes
+      console.log('Erro na limpeza dos testes:', error.message);
+    }
+  });
+
+  afterAll(async () => {
+    await sequelize.close();
   });
 
   describe('Wallet Model', () => {

@@ -147,6 +147,66 @@ const statsValidation = [
 
 // Rotas
 
+/**
+ * @swagger
+ * /api/v1/payments/wallets/{walletId}/payments:
+ *   post:
+ *     summary: Propor pagamento em USDC
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: walletId
+ *         required: true
+ *         schema:
+ *           type: string
+ *         description: ID da carteira
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - recipientAddress
+ *               - recipientName
+ *               - amount
+ *             properties:
+ *               recipientAddress:
+ *                 type: string
+ *                 pattern: '^G[A-Z2-7]{55}$'
+ *                 description: Endereço Stellar do destinatário
+ *               recipientName:
+ *                 type: string
+ *                 minLength: 2
+ *                 maxLength: 100
+ *                 description: Nome do destinatário
+ *               recipientEmail:
+ *                 type: string
+ *                 format: email
+ *                 description: Email do destinatário (opcional)
+ *               amount:
+ *                 type: number
+ *                 minimum: 0.000001
+ *                 maximum: 1000000
+ *                 description: Valor em USDC
+ *               memo:
+ *                 type: string
+ *                 maxLength: 500
+ *                 description: Memo da transação (opcional)
+ *               category:
+ *                 type: string
+ *                 enum: [salary, expense, refund, dividend, other]
+ *                 description: Categoria do pagamento
+ *     responses:
+ *       201:
+ *         description: Pagamento proposto com sucesso
+ *       400:
+ *         description: Dados inválidos
+ *       401:
+ *         description: Não autorizado
+ */
 // BE17 - Propor pagamento em USDC
 router.post(
   '/wallets/:walletId/payments',
@@ -157,6 +217,52 @@ router.post(
   PaymentController.proposePayment
 );
 
+/**
+ * @swagger
+ * /api/v1/payments/payments/{paymentId}/sign:
+ *   post:
+ *     summary: Assinar proposta de pagamento
+ *     tags: [Payments]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: paymentId
+ *         required: true
+ *         schema:
+ *           type: string
+ *           format: uuid
+ *         description: ID do pagamento
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - signature
+ *               - publicKey
+ *             properties:
+ *               signature:
+ *                 type: string
+ *                 pattern: '^[a-fA-F0-9]+$'
+ *                 minLength: 64
+ *                 maxLength: 128
+ *                 description: Assinatura hexadecimal
+ *               publicKey:
+ *                 type: string
+ *                 pattern: '^G[A-Z2-7]{55}$'
+ *                 description: Chave pública Stellar
+ *     responses:
+ *       200:
+ *         description: Pagamento assinado com sucesso
+ *       400:
+ *         description: Dados inválidos
+ *       401:
+ *         description: Não autorizado
+ *       409:
+ *         description: Pagamento já assinado
+ */
 // BE18 - Assinar proposta de pagamento
 router.post(
   '/payments/:paymentId/sign',

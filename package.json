@@ -20,6 +20,7 @@
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
+    "ethers": "^6.15.0",
     "express": "^4.18.2",
     "express-rate-limit": "^7.1.5",
     "express-validator": "^7.0.1",
@@ -27,14 +28,18 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.5.0",
     "morgan": "^1.10.0",
+    "pg": "^8.16.3",
+    "sequelize": "^6.37.7",
+    "stellar-sdk": "^13.3.0",
     "swagger-jsdoc": "^6.2.8",
-    "swagger-ui-express": "^5.0.0",
+    "swagger-ui-express": "^5.0.1",
     "uuid": "^9.0.1",
     "validator": "^13.11.0"
   },
   "devDependencies": {
     "jest": "^29.6.4",
     "nodemon": "^3.1.10",
+    "sqlite3": "^5.1.7",
     "supertest": "^6.3.3"
   }
 }

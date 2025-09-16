@@ -5,6 +5,7 @@ const Transaction = require('../models/transactionModel');
 const Deposit = require('../models/depositModel');
 const Payment = require('../models/paymentModel');
 const { validationResult } = require('express-validator');
+const { Op } = require('sequelize');
 
 /**
  * Controller para gerenciar operações de smart contract
@@ -35,7 +36,7 @@ class SmartContractController {
       const { walletId } = req.params;
       const userId = req.user.id;
 
-      const wallet = await MultisigWallet.findById(walletId);
+      const wallet = await MultisigWallet.findByPk(walletId);
       if (!wallet) {
         return res.status(404).json({
           status: 'error',
@@ -43,7 +44,9 @@ class SmartContractController {
         });
       }
 
-      if (!wallet.isParticipant(userId)) {
+      const participants = wallet.participants || [];
+      const isParticipant = participants.some(p => p.userId === userId);
+      if (!isParticipant) {
         return res.status(403).json({
           status: 'error',
           message: 'Acesso negado'
