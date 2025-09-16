@@ -1,140 +1,143 @@
-# Backend – Zelo Platform
+Backend – Zelo Platform
 
-API RESTful desenvolvida em **Node.js + Express** para gestão financeira transparente e segura em condomínios.
-O backend dá suporte à plataforma **Zelo**, que resolve os principais problemas de administração condominial com carteiras multisig, divisão automática de despesas e registros auditáveis on-chain.
+RESTful API built with Node.js + Express for transparent and secure financial management in condominiums.
+The backend powers the Zelo platform, solving key issues in condo administration with multisig wallets, automated expense splitting, and on-chain auditable records.
 
----
+🚨 Problem
 
-## 🚨 Problema
+Condominium financial management is complex:
 
-A gestão financeira de condomínios é complexa:
+Managers (HOAs) struggle to control collective resources.
 
-* Síndicos e administradores têm dificuldade em gerenciar recursos coletivos.
-* Falta de transparência gera desconfiança e conflitos entre moradores.
-* Aprovações de pagamentos são burocráticas e pouco participativas.
-* Divisão de despesas é manual e sujeita a erros.
+Lack of transparency generates distrust and conflicts among residents.
 
-Impacto:
+Payment approvals are bureaucratic and unilateral.
 
-* **+500 mil condomínios** no Brasil (residenciais e comerciais).
-* **+30 milhões de moradores** afetados.
-* **R\$165 bilhões/ano** em fluxo de receita condominial (\~US\$32B).
+Expense splitting is manual and error-prone.
 
----
+Impact:
 
-## 💡 Solução – Zelo
++500,000 condominiums in Brazil (residential and commercial).
 
-Uma API que conecta condomínio, síndico e conselho em um modelo **seguro, transparente e colaborativo**:
++30 million residents affected.
 
-* **Carteiras Multisig** → pagamentos aprovados conjuntamente pelo síndico e conselho.
-* **Divisão automática de despesas** → proporcional (percentual) ou fixa.
-* **Transações em USDC** → dólar digital estável, baixo risco de volatilidade.
-* **Governança on-chain** → registros imutáveis, auditáveis e com recuperação de acesso segura.
+R$165 billion/year (~US$32B) in condo revenue flows.
 
----
+💡 Solution – Zelo
 
-## ⚙️ Tecnologias Utilizadas
+An API that connects condo, manager, and board in a secure, transparent, and collaborative model:
 
-* **Backend**: Node.js, Express, PostgreSQL
-* **Autenticação**: JWT, controle de acesso baseado em papéis
-* **Segurança**: bcryptjs, helmet, express-rate-limit, express-validator, OWASP best practices
-* **Identificação**: uuid
-* **Blockchain**: Stellar (StellarSDK, StellarExpert, StellarLab, StellarWalletKit, Soroban smart contracts)
-* **Stablecoin**: USDC para transações estáveis
-* **AI Tools**: TRAE, Cursor, ChatGPT, Gemini, Deepseek
+Multisig wallets → payments approved jointly by manager and board.
 
----
+Automated expense splitting → proportional (percentage-based) or fixed.
 
-## 📂 Estrutura do Projeto
+USDC transactions → stable digital dollar, low volatility.
 
-```
+On-chain governance → immutable, auditable records with secure access recovery.
+
+⚙️ Technologies Used
+
+Backend: Node.js, Express, PostgreSQL
+
+Authentication: JWT, role-based access control
+
+Security: bcryptjs, helmet, express-rate-limit, express-validator, OWASP best practices
+
+Identifiers: uuid
+
+Blockchain: Stellar (StellarSDK, StellarExpert, StellarLab, StellarWalletKit, Soroban smart contracts)
+
+Stablecoin: USDC for transactions
+
+AI Tools: TRAE, Cursor, ChatGPT, Gemini, Deepseek
+
+📂 Project Structure
 ├── src/
-│   ├── config/         # Configurações do projeto
-│   ├── controllers/    # Lógica dos endpoints
-│   ├── middleware/     # Middlewares customizados
-│   ├── models/         # Modelos do banco de dados
-│   ├── routes/         # Rotas da API
-│   ├── app.js          # Configuração do Express
-│   └── server.js       # Ponto de entrada da aplicação
-├── .env                # Variáveis de ambiente
-├── .env.example        # Exemplo de variáveis
-├── package.json        # Dependências e scripts
-└── README.md           # Documentação
-```
+│   ├── config/         # Project configurations
+│   ├── controllers/    # Endpoint logic
+│   ├── middleware/     # Custom middlewares
+│   ├── models/         # Database models
+│   ├── routes/         # API routes
+│   ├── app.js          # Express configuration
+│   └── server.js       # Application entry point
+├── .env                # Environment variables
+├── .env.example        # Example environment variables
+├── package.json        # Dependencies and scripts
+└── README.md           # Documentation
 
----
+🚀 Features
+Authentication
 
-## 🚀 Funcionalidades
+User registration
 
-### Autenticação
+JWT login
 
-* Registro de usuários
-* Login com JWT
-* Proteção de rotas
-* RBAC (Role-Based Access Control)
+Route protection
 
-### Usuários
+Role-Based Access Control (RBAC)
 
-* CRUD completo
-* Atualização de perfil
-* Alteração de senha
+Users
 
-### Condomínios
+Full CRUD
 
-* Criação e gestão de carteiras multisig
-* Aprovação de pagamentos colaborativa
-* Rateio automático de despesas
-* Logs e governança on-chain
+Profile updates
 
----
+Password changes
 
-## ▶️ Como Rodar
+Condominiums
 
-1. Clone o repositório
+Create and manage multisig wallets
 
-   ```bash
-   git clone https://github.com/your-username/zelo-backend.git
-   cd zelo-backend
-   ```
+Collaborative payment approvals
 
-2. Instale as dependências
+Automatic expense splitting
 
-   ```bash
-   npm install
-   ```
+On-chain governance and logs
 
-3. Configure as variáveis de ambiente
+▶️ How to Run
 
-   ```bash
-   cp .env.example .env
-   # Edite com suas configurações
-   ```
+Clone the repository
 
-4. Configure o banco de dados PostgreSQL e ajuste a conexão no `.env`
+git clone https://github.com/your-username/zelo-backend.git
+cd zelo-backend
 
-5. Inicie o servidor
 
-   ```bash
-   # Modo desenvolvimento
-   npm run dev
+Install dependencies
 
-   # Modo produção
-   npm start
-   ```
+npm install
 
----
 
-## 🌐 Endpoints Principais
+Configure environment variables
 
-### Autenticação
+cp .env.example .env
+# Edit with your settings
 
-* `POST /api/v1/auth/signup` → Criar usuário
-* `POST /api/v1/auth/login` → Login
-* `PATCH /api/v1/auth/updateMyPassword` → Alterar senha
 
-### Condomínios
+Configure PostgreSQL and set the connection string in .env
 
-* `POST /api/v1/condos` → Criar condomínio
-* `POST /api/v1/condos/:id/wallet` → Criar carteira multisig
-* `POST /api/v1/condos/:id/expenses` → Registrar despesa
-* `PATCH /api/v1/condos/:id/approve` → Aprovar pagamento
+Start the server
+
+# Development mode
+npm run dev
+
+# Production mode
+npm start
+
+🌐 Main API Endpoints
+Authentication
+
+POST /api/v1/auth/signup → Create user
+
+POST /api/v1/auth/login → Login
+
+PATCH /api/v1/auth/updateMyPassword → Change password
+
+Condominiums
+
+POST /api/v1/condos → Create condo
+
+POST /api/v1/condos/:id/wallet → Create multisig wallet
+
+POST /api/v1/condos/:id/expenses → Register expense
+
+PATCH /api/v1/condos/:id/approve → Approve payment
