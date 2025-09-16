@@ -7,7 +7,13 @@ dotenv.config();
 /**
  * Configuração do banco de dados PostgreSQL usando Sequelize
  */
-const sequelize = new Sequelize(process.env.DATABASE_URL, {
+let sequelize = null;
+
+// String de conexão do banco PostgreSQL
+const DATABASE_URL = process.env.DATABASE_URL || "postgresql://neondb_owner:npg_9cvhVA1tPGQj@ep-orange-forest-ac8jacpr-pooler.sa-east-1.aws.neon.tech/neondb?sslmode=require&channel_binding=require";
+
+// Cria a instância do Sequelize com a configuração do banco
+sequelize = new Sequelize(DATABASE_URL, {
   dialect: 'postgres',
   dialectOptions: {
     ssl: {
@@ -17,8 +23,8 @@ const sequelize = new Sequelize(process.env.DATABASE_URL, {
   },
   logging: process.env.NODE_ENV === 'development' ? console.log : false,
   pool: {
-    max: 5,
-    min: 0,
+    max: 10,
+    min: 2,
     acquire: 30000,
     idle: 10000
   }
@@ -39,8 +45,7 @@ const connectDB = async () => {
     return sequelize;
   } catch (error) {
     console.error(`Erro ao conectar ao PostgreSQL: ${error.message}`);
-    console.log('Continuando sem conexão com o banco de dados...');
-    return null;
+    throw error; // Lança o erro para que a aplicação não continue sem banco
   }
 };
 

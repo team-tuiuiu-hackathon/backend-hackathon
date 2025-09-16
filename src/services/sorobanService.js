@@ -1,3 +1,8 @@
+// Importações necessárias
+const SorobanCache = require('../models/sorobanCacheModel');
+const ServiceStatistics = require('../models/serviceStatisticsModel');
+const crypto = require('crypto');
+
 // Mock do Stellar SDK para desenvolvimento
 const StellarSdk = {
   Keypair: {
@@ -100,34 +105,135 @@ const {
 
 class SorobanService {
   constructor() {
-    this.server = new SorobanRpc.Server(process.env.SOROBAN_RPC_URL || 'https://soroban-testnet.stellar.org');
-    this.networkPassphrase = process.env.STELLAR_NETWORK || Networks.TESTNET;
-    this.contractAddress = process.env.MULTISIG_CONTRACT_ADDRESS;
-    this.usdcAssetCode = process.env.USDC_ASSET_CODE || 'USDC';
-    this.usdcIssuer = process.env.USDC_ISSUER;
+    this.server = new SorobanRpc.Server(process.env.RPC_URL || 'https://soroban-testnet.stellar.org');
+    this.network = process.env.SMART_CONTRACT_NETWORK || 'testnet';
+    this.contractAddress = process.env.ADDRESS;
+    this.contractSecret = process.env.PRIVATE_KEY;
+    this.cacheEnabled = true;
+    this.defaultCacheExpiry = 60 * 60 * 1000; // 1 hora
+  }
+
+  /**
+   * Gera hash dos parâmetros para cache
+   */
+  generateParametersHash(parameters) {
+    const paramString = JSON.stringify(parameters, Object.keys(parameters).sort());
+    return crypto.createHash('sha256').update(paramString).digest('hex');
+  }
+
+  /**
+   * Busca dados no cache
+   */
+  async getCachedResult(contractAddress, methodName, parameters) {
+    if (!this.cacheEnabled) return null;
+
+    const startTime = Date.now();
+    
+    try {
+      const parametersHash = this.generateParametersHash(parameters);
+      const cached = await SorobanCache.findCached(contractAddress, methodName, parametersHash, this.network);
+      
+      const executionTime = Date.now() - startTime;
+      
+      if (cached) {
+        await ServiceStatistics.recordCacheHit('SorobanService', methodName);
+        await ServiceStatistics.recordCall('SorobanService', `${methodName}_cache_hit`, executionTime, true);
+        return cached.resultData;
+      } else {
+        await ServiceStatistics.recordCacheMiss('SorobanService', methodName);
+      }
+      
+      return null;
+    } catch (error) {
+      const executionTime = Date.now() - startTime;
+      await ServiceStatistics.recordCall('SorobanService', `${methodName}_cache_error`, executionTime, false, error.message);
+      console.error('Erro ao buscar cache:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Salva resultado no cache
+   */
+  async setCachedResult(contractAddress, methodName, parameters, result, customExpiry = null) {
+    if (!this.cacheEnabled) return;
+
+    try {
+      const parametersHash = this.generateParametersHash(parameters);
+      const expiresAt = new Date(Date.now() + (customExpiry || this.defaultCacheExpiry));
+      
+      await SorobanCache.createCache(
+        contractAddress,
+        methodName,
+        parametersHash,
+        result,
+        this.network,
+        expiresAt
+      );
+    } catch (error) {
+      console.error('Erro ao salvar cache:', error);
+    }
+  }
+
+  /**
+   * Executa método com cache
+   */
+  async executeWithCache(contractAddress, methodName, parameters, executionFunction, cacheExpiry = null) {
+    const startTime = Date.now();
+    
+    try {
+      // Verificar cache primeiro
+      const cachedResult = await this.getCachedResult(contractAddress, methodName, parameters);
+      if (cachedResult) {
+        return cachedResult;
+      }
+
+      // Executar função
+      const result = await executionFunction();
+      
+      // Salvar no cache
+      await this.setCachedResult(contractAddress, methodName, parameters, result, cacheExpiry);
+      
+      const executionTime = Date.now() - startTime;
+      await ServiceStatistics.recordCall('SorobanService', methodName, executionTime, true);
+      
+      return result;
+    } catch (error) {
+      const executionTime = Date.now() - startTime;
+      await ServiceStatistics.recordCall('SorobanService', methodName, executionTime, false, error.message);
+      throw error;
+    }
   }
 
   // Inicializar conexão com o contrato
   async initializeContract() {
-    try {
-      if (!this.contractAddress) {
-        throw new Error('Endereço do contrato multisig não configurado');
-      }
+    return await this.executeWithCache(
+      this.contractAddress,
+      'initializeContract',
+      { network: this.network },
+      async () => {
+        try {
+          if (!this.contractAddress) {
+            throw new Error('Endereço do contrato multisig não configurado');
+          }
 
-      this.contract = new Contract(this.contractAddress);
-      
-      // Verificar se o contrato está ativo
-      const contractData = await this.server.getContractData(this.contractAddress);
-      
-      return {
-        success: true,
-        contractAddress: this.contractAddress,
-        contractData: contractData
-      };
-    } catch (error) {
-      console.error('Erro ao inicializar contrato Soroban:', error);
-      throw new Error(`Falha na inicialização do contrato: ${error.message}`);
-    }
+          this.contract = new Contract(this.contractAddress);
+          
+          // Verificar se o contrato está ativo
+          const contractData = await this.server.getContractData(this.contractAddress);
+          
+          return {
+            success: true,
+            contractAddress: this.contractAddress,
+            contractData: contractData
+          };
+        } catch (error) {
+          console.error('Erro ao inicializar contrato Soroban:', error);
+          throw new Error(`Falha na inicialização do contrato: ${error.message}`);
+        }
+      },
+      5 * 60 * 1000 // Cache por 5 minutos
+    );
   }
 
   // Criar carteira multisig no contrato
@@ -259,7 +365,7 @@ class SorobanService {
       const { transactionId, executor } = executionData;
 
       const sourceKeypair = Keypair.fromSecret(executor.secretKey);
-      const sourceAccount = await this.server.getAccount(sourceKeypair.publicKey());
+      const sourceAccount = await this.server.getAccount(sourceAccount.publicKey());
 
       const transaction = new TransactionBuilder(sourceAccount, {
         fee: BASE_FEE,

@@ -2,7 +2,7 @@ const express = require('express');
 const { body, param, query } = require('express-validator');
 const rateLimit = require('express-rate-limit');
 const DepositController = require('../controllers/depositController');
-const authMiddleware = require('../middleware/authMiddleware').protect;
+// const authMiddleware = require('../middleware/authMiddleware').protect;
 const errorHandler = require('../middleware/errorHandler');
 
 const router = express.Router();
@@ -123,7 +123,7 @@ const statsValidation = [
 // BE15 - Registrar depósito em USDC
 router.post(
   '/wallets/:walletId/deposits',
-  authMiddleware,
+  // authMiddleware,
   depositRateLimit,
   walletIdValidation,
   registerDepositValidation,
@@ -133,7 +133,7 @@ router.post(
 // BE16 - Confirmar depósito (webhook ou processo interno)
 router.put(
   '/deposits/:depositId/confirm',
-  authMiddleware,
+  // authMiddleware,
   confirmationRateLimit,
   depositIdValidation,
   confirmDepositValidation,
@@ -143,7 +143,7 @@ router.put(
 // Listar depósitos de uma carteira
 router.get(
   '/wallets/:walletId/deposits',
-  authMiddleware,
+  // authMiddleware,
   walletIdValidation,
   listDepositsValidation,
   DepositController.getWalletDeposits
@@ -152,7 +152,7 @@ router.get(
 // Obter detalhes de um depósito específico
 router.get(
   '/deposits/:depositId',
-  authMiddleware,
+  // authMiddleware,
   depositIdValidation,
   DepositController.getDepositDetails
 );
@@ -160,7 +160,7 @@ router.get(
 // Cancelar depósito pendente
 router.delete(
   '/deposits/:depositId',
-  authMiddleware,
+  // authMiddleware,
   depositRateLimit,
   depositIdValidation,
   DepositController.cancelDeposit
@@ -169,7 +169,7 @@ router.delete(
 // Obter estatísticas de depósitos da carteira
 router.get(
   '/wallets/:walletId/deposits/stats',
-  authMiddleware,
+  // authMiddleware,
   walletIdValidation,
   statsValidation,
   DepositController.getWalletDepositStats
@@ -178,7 +178,7 @@ router.get(
 // Buscar depósitos pendentes de confirmação
 router.get(
   '/wallets/:walletId/deposits/pending',
-  authMiddleware,
+  // authMiddleware,
   walletIdValidation,
   DepositController.getPendingDeposits
 );
@@ -186,7 +186,7 @@ router.get(
 // Reprocessar depósito falhado (apenas admins)
 router.post(
   '/deposits/:depositId/retry',
-  authMiddleware,
+  // authMiddleware,
   depositRateLimit,
   depositIdValidation,
   DepositController.retryDeposit

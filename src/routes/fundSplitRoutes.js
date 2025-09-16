@@ -2,7 +2,7 @@ const express = require('express');
 const rateLimit = require('express-rate-limit');
 const { body, param, query } = require('express-validator');
 const FundSplitController = require('../controllers/fundSplitController');
-const authMiddleware = require('../middleware/authMiddleware').protect;
+// const authMiddleware = require('../middleware/authMiddleware').protect;
 const SmartContractMiddleware = require('../middleware/smartContractMiddleware');
 
 const router = express.Router();
@@ -209,7 +209,7 @@ const listValidation = [
 
 // Aplicar middlewares globais
 router.use(fundSplitLimiter);
-router.use(authMiddleware);
+// router.use(authMiddleware);
 router.use(SmartContractMiddleware.sanitizeInput);
 
 // === ROTAS DE REGRAS DE DIVISÃO ===

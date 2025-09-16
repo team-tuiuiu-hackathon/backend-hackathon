@@ -1,10 +1,14 @@
 const MultisigWallet = require('../models/multisigWalletModel');
 const User = require('../models/userModel');
+const NotificationQueue = require('../models/notificationQueueModel');
+const ServiceStatistics = require('../models/serviceStatisticsModel');
 
 class NotificationService {
   
   // BE10 - Notificar membros da carteira sobre eventos de transação
   static async notifyWalletMembers(walletId, event, transactionData, excludeUserId = null) {
+    const startTime = Date.now();
+    
     try {
       const wallet = await MultisigWallet.findById(walletId)
         .populate('participants.userId', 'name email notificationPreferences');
@@ -21,21 +25,46 @@ class NotificationService {
       const notifications = [];
 
       for (const user of recipients) {
-        const notification = await this.createNotification(user, event, {
-          walletId: wallet._id,
-          walletName: wallet.name,
-          transactionData
+        // Criar notificação na fila do banco de dados
+        const notification = await NotificationQueue.createNotification({
+          recipientType: this.getPreferredNotificationType(user),
+          recipientAddress: this.getRecipientAddress(user),
+          subject: this.getNotificationTitle(event, {
+            walletId: wallet._id,
+            walletName: wallet.name,
+            transactionData
+          }),
+          message: this.getNotificationMessage(event, {
+            walletId: wallet._id,
+            walletName: wallet.name,
+            transactionData
+          }),
+          templateName: `wallet_${event}`,
+          templateData: {
+            userName: user.name,
+            walletName: wallet.name,
+            transactionData
+          },
+          priority: this.getNotificationPriority(event),
+          metadata: {
+            userId: user._id,
+            walletId: wallet._id,
+            event,
+            excludeUserId
+          }
         });
         
         notifications.push(notification);
-
-        // Enviar notificação baseada nas preferências do usuário
-        await this.sendNotificationByPreference(user, notification);
       }
+
+      const executionTime = Date.now() - startTime;
+      await ServiceStatistics.recordCall('NotificationService', 'notifyWalletMembers', executionTime, true);
 
       return notifications;
 
     } catch (error) {
+      const executionTime = Date.now() - startTime;
+      await ServiceStatistics.recordCall('NotificationService', 'notifyWalletMembers', executionTime, false, error.message);
       console.error('Erro ao notificar membros da carteira:', error);
       throw error;
     }

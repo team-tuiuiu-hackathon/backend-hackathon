@@ -6,10 +6,8 @@ const rateLimit = require('express-rate-limit');
 const dotenv = require('dotenv');
 
 // Importação de rotas
-const authRoutes = require('./routes/authRoutes');
 const stellarAuthRoutes = require('./routes/stellarAuthRoutes');
 const hackathonRoutes = require('./routes/hackathonRoutes');
-const smartContractRoutes = require('./routes/smartContractRoutes');
 const multisigWalletRoutes = require('./routes/multisigWalletRoutes');
 const transactionRoutes = require('./routes/transactionRoutes');
 const depositRoutes = require('./routes/depositRoutes');
@@ -18,7 +16,6 @@ const fundSplitRoutes = require('./routes/fundSplitRoutes');
 
 // Importação de middleware de erro
 const errorHandler = require('./middleware/errorHandler');
-const SmartContractMiddleware = require('./middleware/smartContractMiddleware');
 
 // Importação do Swagger
 const { specs, swaggerUi } = require('./config/swagger');
@@ -89,7 +86,6 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(specs, {
 
 // Routes
 // Rotas da API
-app.use(`${API_PREFIX}/auth`, authRoutes);
 app.use(`${API_PREFIX}/stellar`, stellarAuthRoutes);
 app.use(`${API_PREFIX}/hackathons`, hackathonRoutes);
 app.use(`${API_PREFIX}/wallets`, multisigWalletRoutes);
@@ -97,11 +93,6 @@ app.use(`${API_PREFIX}`, transactionRoutes);
 app.use(`${API_PREFIX}`, depositRoutes);
 app.use(`${API_PREFIX}`, paymentRoutes);
 app.use(`${API_PREFIX}`, fundSplitRoutes);
-app.use(`${API_PREFIX}/smart-contract`, 
-  SmartContractMiddleware.sanitizeInput,
-  SmartContractMiddleware.logActivity,
-  smartContractRoutes
-);
 
 // Route to check if the API is working
 app.get('/', (req, res) => {
@@ -120,9 +111,6 @@ app.all('*', (req, res, next) => {
     message: `Could not find ${req.originalUrl} on this server!`,
   });
 });
-
-// Middleware for smart contract specific error handling
-app.use('/api/*/smart-contract', SmartContractMiddleware.handleSmartContractErrors);
 
 // Middleware for error handling
 app.use(errorHandler);

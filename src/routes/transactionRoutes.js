@@ -1,7 +1,7 @@
 const express = require('express');
 const { body, param, query } = require('express-validator');
 const TransactionController = require('../controllers/transactionController');
-const authMiddleware = require('../middleware/authMiddleware').protect;
+// const authMiddleware = require('../middleware/authMiddleware').protect;
 const rateLimit = require('express-rate-limit');
 
 const router = express.Router();
@@ -171,7 +171,7 @@ const getTransactionsValidation = [
 ];
 
 // Aplicar autenticação a todas as rotas
-router.use(authMiddleware);
+// router.use(authMiddleware);
 
 // Rotas para transações
 

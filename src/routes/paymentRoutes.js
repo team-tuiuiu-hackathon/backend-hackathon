@@ -2,7 +2,7 @@ const express = require('express');
 const { body, param, query } = require('express-validator');
 const rateLimit = require('express-rate-limit');
 const PaymentController = require('../controllers/paymentController');
-const authMiddleware = require('../middleware/authMiddleware').protect;
+// const authMiddleware = require('../middleware/authMiddleware').protect;
 const errorHandler = require('../middleware/errorHandler');
 
 const router = express.Router();
@@ -210,7 +210,7 @@ const statsValidation = [
 // BE17 - Propor pagamento em USDC
 router.post(
   '/wallets/:walletId/payments',
-  authMiddleware,
+  // authMiddleware,
   paymentRateLimit,
   walletIdValidation,
   proposePaymentValidation,
@@ -266,7 +266,7 @@ router.post(
 // BE18 - Assinar proposta de pagamento
 router.post(
   '/payments/:paymentId/sign',
-  authMiddleware,
+  // authMiddleware,
   signatureRateLimit,
   paymentIdValidation,
   signPaymentValidation,
@@ -276,7 +276,7 @@ router.post(
 // BE18 - Executar pagamento aprovado
 router.post(
   '/payments/:paymentId/execute',
-  authMiddleware,
+  // authMiddleware,
   executionRateLimit,
   paymentIdValidation,
   executePaymentValidation,
@@ -286,7 +286,7 @@ router.post(
 // Listar pagamentos de uma carteira
 router.get(
   '/wallets/:walletId/payments',
-  authMiddleware,
+  // authMiddleware,
   walletIdValidation,
   listPaymentsValidation,
   PaymentController.getWalletPayments
@@ -295,7 +295,7 @@ router.get(
 // Obter detalhes de um pagamento específico
 router.get(
   '/payments/:paymentId',
-  authMiddleware,
+  // authMiddleware,
   paymentIdValidation,
   PaymentController.getPaymentDetails
 );
@@ -303,7 +303,7 @@ router.get(
 // Rejeitar pagamento (apenas admins)
 router.post(
   '/payments/:paymentId/reject',
-  authMiddleware,
+  // authMiddleware,
   paymentRateLimit,
   paymentIdValidation,
   rejectPaymentValidation,
@@ -313,7 +313,7 @@ router.post(
 // Obter estatísticas de pagamentos da carteira
 router.get(
   '/wallets/:walletId/payments/stats',
-  authMiddleware,
+  // authMiddleware,
   walletIdValidation,
   statsValidation,
   PaymentController.getWalletPaymentStats
@@ -322,7 +322,7 @@ router.get(
 // Buscar pagamentos aprovados para execução
 router.get(
   '/wallets/:walletId/payments/ready',
-  authMiddleware,
+  // authMiddleware,
   walletIdValidation,
   PaymentController.getReadyForExecution
 );
